@@ -104,6 +104,19 @@
       });
     }
 
+    // Lock screen show/hide password toggle
+    const lockToggleVis = document.getElementById('lockToggleVis');
+    if (lockToggleVis && passInput) {
+      lockToggleVis.addEventListener('click', () => {
+        const isPassword = passInput.type === 'password';
+        passInput.type = isPassword ? 'text' : 'password';
+        const eyeOpen = document.getElementById('lockEyeOpen');
+        const eyeClosed = document.getElementById('lockEyeClosed');
+        if (eyeOpen) eyeOpen.style.display = isPassword ? 'none' : 'block';
+        if (eyeClosed) eyeClosed.style.display = isPassword ? 'block' : 'none';
+      });
+    }
+
     if (decryptBtn) {
       decryptBtn.addEventListener('click', () => fileInput.click());
     }
@@ -112,17 +125,8 @@
       fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
-        // Ask for passphrase to decrypt
-        const pass = prompt('Enter passphrase to decrypt this file:');
-        if (!pass || pass.length < 6) {
-          showToast('Passphrase required (min 6 chars)', 'warning');
-          e.target.value = '';
-          return;
-        }
-
-        await decryptAndUnlock(file, pass);
         e.target.value = '';
+        showDecryptDialog(file);
       });
     }
   }
@@ -161,6 +165,118 @@
   }
 
   async function decryptAndUnlock(file, pass) {
+    clearTerminal();
+    await _importAndDecryptFile(file, pass);
+  }
+
+  // ===== DECRYPT DIALOG (replaces prompt()) =====
+  let _pendingDecryptFile = null;
+  function showDecryptDialog(file) {
+    // If lock screen passphrase input already has a value, use it directly (no dialog)
+    const lockPassInput = document.getElementById('lockMasterPass');
+    if (lockPassInput && lockPassInput.value && lockPassInput.value.trim().length >= 4) {
+      // User already entered a passphrase on lock screen — use it directly
+      const pass = lockPassInput.value.trim();
+      state.masterPassphrase = pass;
+      state.appUnlocked = true;
+      const ls = document.getElementById('lockScreen');
+      const am = document.getElementById('appMain');
+      if (ls) ls.style.display = 'none';
+      if (am) am.style.display = 'block';
+      updatePassphraseDisplay();
+      setupEventListeners();
+      clearTerminal();
+      _importAndDecryptFile(file, pass).then(() => {
+        loadFromStorage();
+        updateStats();
+      });
+      return;
+    }
+
+    // No passphrase entered yet — show the dialog
+    _pendingDecryptFile = file;
+    let overlay = document.getElementById('decryptDialogOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'decryptDialogOverlay';
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:400px;">
+          <h2 style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            🔓 Enter Decryption Passphrase
+          </h2>
+          <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:1rem;">
+            File: <strong id="decryptFileName"></strong>
+          </p>
+          <div class="form-group">
+            <label for="decryptPassInput">Master Passphrase</label>
+            <div style="position:relative;">
+              <input type="password" id="decryptPassInput" placeholder="Enter the passphrase used to encrypt this file..." autocomplete="off" style="padding-right:42px;">
+              <button id="decryptToggleVis" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-secondary);padding:4px;" title="Show/hide">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <span style="display:block;font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Must match the passphrase used when exporting the file.</span>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" id="decryptCancelBtn">Cancel</button>
+            <button class="btn btn-primary" id="decryptConfirmBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              Decrypt
+            </button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      // Wire up events
+      document.getElementById('decryptCancelBtn').addEventListener('click', () => {
+        overlay.classList.remove('active');
+        overlay.style.zIndex = '';
+        _pendingDecryptFile = null;
+      });
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+          overlay.style.zIndex = '';
+          _pendingDecryptFile = null;
+        }
+      });
+      document.getElementById('decryptConfirmBtn').addEventListener('click', () => doDecryptFromDialog());
+      document.getElementById('decryptPassInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doDecryptFromDialog();
+      });
+      document.getElementById('decryptToggleVis').addEventListener('click', () => {
+        const inp = document.getElementById('decryptPassInput');
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+      });
+    }
+
+    document.getElementById('decryptFileName').textContent = file.name || 'file';
+    const passInput = document.getElementById('decryptPassInput');
+    passInput.value = '';
+    passInput.type = 'password';
+    // IMPORTANT: Dialog must appear ABOVE the lock screen (z-index: 10000)
+    overlay.style.zIndex = '10001';
+    overlay.classList.add('active');
+    setTimeout(() => passInput.focus(), 100);
+  }
+
+  async function doDecryptFromDialog() {
+    const pass = document.getElementById('decryptPassInput').value.trim();
+    if (!pass || pass.length < 4) {
+      showToast('Enter a passphrase (min 4 characters)', 'warning');
+      return;
+    }
+    const file = _pendingDecryptFile;
+    if (!file) return;
+    const overlay = document.getElementById('decryptDialogOverlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      overlay.style.zIndex = '';
+    }
+    _pendingDecryptFile = null;
     clearTerminal();
     await _importAndDecryptFile(file, pass);
   }
@@ -273,7 +389,8 @@
 
     // ===== NEW: Search & Filter =====
     if ($('#searchInput')) {
-      $('#searchInput').addEventListener('input', debounce(filterEntries, 300));
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      $('#searchInput').addEventListener('input', debounce(filterEntries, isMobile ? 120 : 250));
       $('#filterSource').addEventListener('change', filterEntries);
       $('#filterStrength').addEventListener('change', filterEntries);
       $('#selectAllFilteredBtn').addEventListener('click', selectAllFiltered);

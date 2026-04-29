@@ -1,73 +1,79 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to **PwdCleaner** will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)  
+Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)  
+Author: [@SudhirDevOps1](https://github.com/SudhirDevOps1)
 
-## [2.0.0] - 2025-06-01
+---
 
-### Added
-- **Encrypted File Export/Import** — AES-256-GCM encrypted `.pwdcleaner` file format with PBKDF2 200k iterations, zero-knowledge design. Download encrypted vault, import & decrypt later on any device with passphrase.
-- **One-Click Auto Clean & Merge** — Automatically finds all exact duplicates (same website + username + password) and similar entries (same website + username), merges notes/fields, keeps best data, removes extras in one click.
-- **Auto-Clean After Export** — Toggle to automatically clear all browser data after every export, so reimporting the same file won't show old duplicates.
-- **Browser Extension** — Chrome/Chromium extension (`extension/` directory) with popup UI, dark/light theme, opens PwdCleaner in new tab. Minimal permissions (storage only), zero tracking.
-- **PRIVACY.md** — Comprehensive 15-section privacy policy document covering zero-knowledge architecture, encryption details, data rights, third-party dependencies, and more.
-- **File format versioning** — Encrypted files include magic header `PWDCLEANER`, version bytes, salt, IV, and ciphertext for future-proof format.
+## [2.1.0] — 2026-04-29
 
-### Fixed
-- **Duplicate function definitions** — Removed duplicate `renderAllEntries()` and `handleFiles()` definitions that caused the old basic version to override the enhanced version.
-- **escapeRegExp double-escape** — Fixed regex escape function that had incorrect double backslash escaping.
-- **Missing function implementations** — Added `autoCleanMergeAll()`, `encryptedFileExport()`, and `encryptedFileImport()` functions that were referenced by event listeners but never defined (runtime crash).
-- **Auto-clean after export** — Fixed data persistence issue where exported data stayed in browser memory.
+### ✅ Fixed (Critical Bugs)
+- **Unicode password crash** — `btoa()` threw `InvalidCharacterError` on passwords with non-ASCII characters (emoji, Hindi, Chinese, etc.). Replaced all `btoa`/`atob` with Unicode-safe `_safeBtoa`/`_safeAtob` helpers.
+- **Toast notification invisible** — CSS class was `toast success` (space) but styles expected `toast-success` (hyphen). Fixed to `toast-${type}`.
+- **Duplicate function definitions** — `renderAllEntries()` and `handleFiles()` were defined twice, old basic version overrode enhanced version. Removed duplicates.
+- **Missing function crash** — `autoCleanMergeAll()`, `encryptedFileExport()`, `encryptedFileImport()` were referenced in event listeners but never defined (runtime crash). All implemented.
+- **escapeRegExp double-escape** — Regex escape function had incorrect double backslash. Fixed.
+- **Header sticky not working** — CSS `.header-inner` existed but HTML was missing the wrapper div. Added.
 
-## [1.1.0] - 2024-06-01
+### ✅ Fixed (UX Bugs)
+- **Redundant passphrase prompt** — Lock screen "Import & Decrypt" showed a dialog asking for passphrase even when the user already typed one in the input. Now uses the entered passphrase directly.
+- **Lock screen show/hide password** — Added eye toggle button so users can verify their passphrase before unlocking.
 
-### Added
-- **Tab Navigation System** — Workspace, Health, Generator, Analyzer, Tools, Stats tabs
-- **Password Strength Analyzer** — Deep analysis with 12 security checks, crack time estimation, and improvement suggestions
-- **Password Generator** — Cryptographically secure (Web Crypto API), configurable length (8-128), character types, exclude ambiguous, batch generation
-- **Password Health Dashboard** — Visual health score ring, weak/reused/strong/2FA/short password counts
-- **Search & Filter** — Real-time search across all fields, filter by source manager and strength level
-- **Detailed Statistics** — Source distribution, password length distribution, strength overview, top domains bar charts
-- **Auto-Categorize** — Smart categorization into Social, Email, Shopping, Entertainment, Finance, Development, Gaming, etc.
-- **Smart Merge** — Intelligent merging of same-site/same-user entries, combining notes and keeping best data
-- **Backup & Restore** — Download encrypted JSON backups, restore from backup files
-- **Remove Empty Entries** — Clean out entries with no password/username/URL
-- **Normalize URLs** — Standardize all URLs (remove www, trailing slashes, ensure HTTPS)
-- **Export Selected Entries** — Export only checked entries from filtered view
-- **Edit Entry Modal** — Inline editing of any entry (name, URL, username, password, notes, group)
-- **Undo System** — 30-second undo window for delete/clear operations
-- **Batch Operations** — Select all filtered entries, batch delete, batch export
-- **Import Mode Toggle** — Merge mode (default) or Replace mode for imports
-- **Keyboard Shortcuts** — Ctrl+I (import), Ctrl+F (search), Ctrl+D (duplicates), Ctrl+E (export), Ctrl+G (generator), Ctrl+Z (undo), Ctrl+L (sample data)
-- **Password Strength Dots** — Visual strength indicators (colored dots) next to every entry
-- **Reused Password Detection** — Identifies passwords used on multiple sites
-- **Weak Password Detection** — Common password list checking, pattern detection
-- **Crack Time Estimation** — Estimates time to brute-force based on character set and length
-- Enhanced stats bar with Weak Passwords and Reused Passwords counters
-- New badge tags in hero section for Strength Analyzer and Password Generator
+### ✅ Added
+- **Decrypt Dialog** — Replaced ugly browser `prompt()` with a beautiful glassmorphism modal for entering decryption passphrase.
+- **Faster mobile search** — Reduced debounce from 300ms to 120ms on mobile devices for snappier search.
+- **Lock screen eye toggle** — Show/hide password button on the lock screen passphrase input.
+- **PRIVACY.md** — Comprehensive 15-section privacy policy document.
+- **Encrypted Data Terminal** — Inspect raw encrypted `.pwdcleaner` file data to verify passwords are truly unreadable.
+- **Demo Encrypt Button** — One-click demo that encrypts sample data and shows the raw encrypted output in the terminal.
+- **JSON encrypted format** — Changed from binary to JSON format for `.pwdcleaner` files so they work reliably on ALL devices (Windows, Mac, Linux, Android, iOS).
 
-## [1.0.0] - 2024-01-01
+### 🔄 Changed
+- **Encrypted file format v2** — Now uses JSON text instead of binary. Files are human-readable (encrypted part is base64). Same AES-256-GCM + PBKDF2 200k security.
+- **Footer credits** — Updated to @SudhirDevOps1 with GitHub link.
 
-### Added
-- Initial release of Password Manager Duplicate Cleaner & Universal Format Converter
-- Support for 40+ password manager and browser export formats
-- Import formats: Chrome, Brave, Edge, Firefox, Safari, Opera, Vivaldi, Tor, Samsung Internet, UC Browser, Yandex Browser, DuckDuckGo, Bitwarden, Proton Pass, 1Password, LastPass, Dashlane, Keeper, NordPass, RoboForm, KeePass, Enpass, Zoho Vault, Sticky Password, LogMeOnce, RememBear, KeeWeb, Buttercup, LessPass, Passbolt, Padloc, TeamPass, Passwork, CommonKey, Myki, True Key, Intuitive Password, Password Boss, SplashID, mSecure, DataVault, Secrets, Codebook, Strongbox, Minimalist, Passky, Bitwarden_RS, Keychain
-- Duplicate detection with multiple rules: exact match, website+username, website only, fuzzy domain
-- Client-side AES-GCM encryption with PBKDF2 key derivation (100k iterations)
-- Local storage encryption option
-- Export cleaned data to any supported format
-- Drag & drop file upload with multi-file support
-- Auto-format detection (CSV/JSON/TXT/XML)
-- Dark/Light mode toggle with glassmorphism UI
-- PWA support with offline functionality
-- Service Worker for cache-first offline access
-- Toast notification system
-- Share via WhatsApp, Twitter, LinkedIn (Web Share API)
-- PWA install prompt
-- Sample data demo
-- Privacy-first: zero tracking, zero analytics, all processing client-side
-- Developer contact information in footer
-- GitHub Actions CI/CD for GitHub Pages deployment
-- Responsive design for mobile, tablet, and desktop
+---
+
+## [2.0.0] — 2026-04-25
+
+### ✅ Added
+- **Lock Screen** — Master passphrase required to enter the app (zero-knowledge gate).
+- **Encrypted File Export/Import** — Download vault as `.pwdcleaner` encrypted file. Import & decrypt on any device.
+- **One-Click Auto Clean & Merge** — Finds all exact duplicates, merges similar entries, keeps best data.
+- **Auto-Clean After Export** — Toggle to clear all data automatically after every export.
+- **Browser Extension** — Chrome/Chromium extension with popup UI (`extension/` directory).
+- **Password Generator** — Cryptographically secure (Web Crypto API), 8-128 chars, batch generation.
+- **Password Strength Analyzer** — 12 security checks, crack time estimation, improvement suggestions.
+- **Health Dashboard** — Visual score ring, weak/reused/strong/2FA/short metrics.
+- **Search & Filter** — Real-time search, filter by source and strength level.
+- **Auto-Categorize** — Smart categorization (Social, Email, Shopping, Finance, etc.).
+- **Smart Merge** — Intelligent merging of same-site/same-user entries.
+- **Batch Operations** — Select all, batch delete, batch export.
+- **Edit Entry Modal** — Inline editing of any entry.
+- **Undo System** — 30-second undo for all destructive actions.
+- **Keyboard Shortcuts** — Ctrl+I/F/D/E/G/Z/L.
+- **Detailed Statistics** — Source distribution, length charts, strength overview, top domains.
+- **Tab Navigation** — Workspace, Health, Generator, Analyzer, Tools, Stats.
+
+---
+
+## [1.0.0] — 2026-01-01
+
+### ✅ Added
+- Initial release
+- 40+ password manager format support
+- Duplicate detection (4 rules)
+- Client-side AES-GCM encryption
+- PWA with offline support
+- Dark/light mode
+- Glassmorphism UI
+- Responsive design
+- GitHub Actions CI/CD
+- Privacy policy page
+
+---
+
+**Legend:** ✅ Added/Fixed · 🔄 Changed · ❌ Removed

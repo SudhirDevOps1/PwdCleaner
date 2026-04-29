@@ -1,120 +1,253 @@
-# Password Manager Duplicate Cleaner & Universal Format Converter
+# 🔐 PwdCleaner — Password Duplicate Cleaner & Universal Format Converter
 
-A privacy-first, offline-capable web application for cleaning duplicate passwords and converting between 40+ password manager formats. Built with pure vanilla HTML, CSS, and JavaScript — no frameworks, no CDNs, no tracking.
+> **Privacy-first · Zero-knowledge · Offline · 40+ formats · AES-256-GCM encrypted**
 
-## Features
+Created by **[@SudhirDevOps1](https://github.com/SudhirDevOps1)**
 
-- **40+ Format Support**: Import/export from browsers and password managers
-- **Duplicate Detection**: Multiple rules (exact, website+username, website only, fuzzy domain)
-- **Password Strength Analyzer**: Deep analysis with 12 security checks, crack time estimation
-- **Password Generator**: Cryptographically secure, configurable 8-128 chars, batch generation
-- **Health Dashboard**: Visual score ring, weak/reused/strong/2FA metrics
-- **Search & Filter**: Real-time search, filter by source and strength
-- **Auto-Categorize**: Smart categorization (Social, Email, Shopping, Finance, etc.)
-- **Smart Merge**: Intelligent merging of same-site entries
-- **Backup & Restore**: Download/restore encrypted JSON backups
-- **Edit Entries**: Inline modal editing of any entry
-- **Undo System**: 30-second undo for all destructive actions
-- **Keyboard Shortcuts**: Ctrl+I/F/D/E/G/Z/L for power users
-- **Client-Side Encryption**: AES-GCM with PBKDF2 (100k iterations) for local storage
-- **Offline-First**: PWA with Service Worker caching
-- **Privacy-First**: All processing happens in your browser. Zero data leaves your device.
-- **Glassmorphism UI**: Beautiful dark/light mode with responsive design
-- **Detailed Statistics**: Source distribution, length charts, strength overview, top domains
+[![GitHub Pages](https://img.shields.io/badge/Live-Demo-6366f1?style=for-the-badge&logo=github&logoColor=white)](https://sudhirdevops1.github.io/PwdCleaner/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![No Tracking](https://img.shields.io/badge/Zero-Tracking-red?style=for-the-badge)](https://sudhirdevops1.github.io/PwdCleaner/privacy.html)
+[![Offline](https://img.shields.io/badge/Works-Offline-blue?style=for-the-badge)](https://sudhirdevops1.github.io/PwdCleaner/)
 
-## Supported Formats
+---
 
-### Browsers
-Chrome, Brave, Edge, Firefox, Safari, Opera, Vivaldi, Tor, Samsung Internet, UC Browser, Yandex Browser, DuckDuckGo
+## 🚀 Live App
 
-### Password Managers
-Bitwarden (CSV/JSON), Proton Pass (JSON), 1Password (1PUX/CSV), LastPass (CSV), Dashlane (CSV/JSON), Keeper (CSV), NordPass (CSV), RoboForm (CSV), KeePass (XML/CSV), Enpass (JSON/CSV), Zoho Vault (CSV), Sticky Password (CSV), LogMeOnce (CSV), RememBear (CSV), KeeWeb (JSON), Buttercup (JSON), LessPass (JSON), Passbolt (JSON), Padloc (JSON), TeamPass (CSV), Passwork (JSON), CommonKey (CSV), Myki (CSV), True Key (CSV), Intuitive Password (CSV), Password Boss (CSV), SplashID (CSV), mSecure (CSV), DataVault (CSV), Secrets (CSV), Codebook (CSV), Strongbox (CSV), Minimalist (JSON), Passky (JSON), Bitwarden_RS (JSON), Keychain (CSV), Generic CSV/JSON
+**👉 [https://sudhirdevops1.github.io/PwdCleaner/](https://sudhirdevops1.github.io/PwdCleaner/)**
 
-## Quick Start
+Works on any device — desktop, tablet, mobile. No installation needed. Just open and use.
 
-### Local Usage
-1. Clone or download this repository
-2. Open `index.html` in any modern browser
-3. Import your password files
-4. Select duplicate detection rule
-5. Clean duplicates and export
+---
 
-### Deploy to GitHub Pages
-1. Fork this repository
-2. Go to Settings > Pages
-3. Select "Deploy from a branch" > main
-4. Your app will be live at `https://yourusername.github.io/pwd-cleaner/`
+## 🤔 Why PwdCleaner?
 
-Or push to `main` branch — GitHub Actions CI/CD handles deployment automatically.
+If you've ever:
+- Imported passwords from **multiple browsers** (Chrome, Firefox, Edge...)
+- Switched between **password managers** (Bitwarden, LastPass, 1Password...)
+- **Re-imported** your vault CSV/JSON and got duplicate entries
+- Spent hours manually deleting duplicates
 
-## How to Use
+**PwdCleaner solves this in one click.** It finds exact duplicates, removes extras, and exports clean data back to your password manager's format.
 
-### Import
-1. Drag & drop files onto the upload area, or click to browse
-2. The app auto-detects the format (CSV, JSON, TXT, XML)
-3. Multiple files can be imported simultaneously
-4. Use "Load Sample Data" for a demo
+---
 
-### Duplicate Detection
-1. Select your duplicate rule from the dropdown:
-   - **Exact Match**: website + username + password all match
-   - **Website + Username**: matches on site and user
-   - **Website Only**: matches on domain/URL
-   - **Fuzzy Domain**: matches similar domains (e.g., google.com == www.google.com)
-2. Click "Find Duplicates"
-3. Review groups in collapsible cards
-4. Use "Keep First", "Mark Extras", "Select All", or manually select entries
-5. Click "Delete Marked" to remove
+## ✨ Features
+
+### Core
+- **40+ Format Support** — Import/export from Chrome, Firefox, Safari, Bitwarden, LastPass, 1Password, Dashlane, KeePass, Proton Pass, NordPass, RoboForm, and 30+ more
+- **One-Click Auto Clean** — Finds all exact duplicates (same website + username + password) and removes extras
+- **Smart Merge** — Merges entries sharing the same site + user, keeps best data, combines notes
+- **4 Duplicate Rules** — Exact match, website+username, website only, fuzzy domain
+
+### Security & Privacy
+- **AES-256-GCM Encryption** — Encrypt vault files with your passphrase (PBKDF2 200k iterations)
+- **Zero-Knowledge** — Only you know your passphrase. We cannot decrypt your files.
+- **100% Offline** — Works without internet after first load (PWA + Service Worker)
+- **Zero Tracking** — No analytics, no cookies, no external requests, no data collection
+- **Lock Screen** — Master passphrase required to enter the app
+
+### Tools
+- **Password Generator** — Cryptographically secure, 8-128 chars, configurable character types
+- **Password Strength Analyzer** — 12 security checks, crack time estimation, improvement suggestions
+- **Health Dashboard** — Visual score ring, weak/reused/strong/2FA metrics
+- **Search & Filter** — Real-time search, filter by source manager and strength level
+- **Auto-Categorize** — Smart categorization (Social, Email, Shopping, Finance, etc.)
+- **Batch Operations** — Select all, batch delete, batch export
+- **Edit Entries** — Inline modal editing of any entry
+- **Undo System** — 30-second undo for destructive actions
+- **Auto-Clean After Export** — Automatically clears data after export download
+- **Encrypted Data Terminal** — Inspect raw encrypted data to verify your passwords are truly unreadable
 
 ### Export
-1. Select the target format from the dropdown
-2. Click "Export Cleaned Data"
-3. File downloads automatically
+- Export to **16 formats**: Bitwarden CSV/JSON, Chrome, Firefox, LastPass, 1Password, Dashlane, KeePass, Proton Pass, NordPass, RoboForm, Enpass, Zoho Vault, Generic CSV/JSON
 
-### Encryption
-1. Toggle the encryption switch
-2. Set a master passphrase
-3. Data is encrypted with AES-GCM (PBKDF2, 100k iterations)
-4. Encrypted data stored in localStorage
+---
 
-## Privacy
+## 📖 How to Use
 
-- **Zero tracking**: No analytics, cookies, or external requests
-- **Client-side only**: All processing in your browser
-- **No data collection**: Nothing leaves your device
-- **Open source**: Fully auditable code
+### Step 1: Enter Passphrase
+Open the app → enter a master passphrase → click **Unlock & Enter**.
 
-See [privacy.html](privacy.html) for full privacy policy.
+### Step 2: Import Passwords
+- **Drag & drop** your exported CSV/JSON files, OR
+- **Click to browse** and select files, OR
+- Click **Load Sample Data** for a demo
 
-## Development
+### Step 3: Clean Duplicates
+- Click **Auto Clean All Duplicates** for one-click cleanup, OR
+- Select a **Duplicate Rule** → click **Find Duplicates** → review groups → **Delete Marked**
 
-No build tools needed. Edit files directly:
+### Step 4: Export
+- Select your desired **Export Format** from the dropdown
+- Click **Export Cleaned Data**
+- Import the clean file back into your password manager
+
+### Encrypted File (Cross-Device)
+1. Click **🔒 Download Encrypted File** — saves a `.pwdcleaner` file
+2. Copy this file to USB / email / cloud
+3. On another device: open PwdCleaner → enter same passphrase → **Import & Decrypt**
+4. All your data is restored — works on any device, any browser
+
+---
+
+## 🛡️ Supported Formats (40+)
+
+### Browsers
+| Browser | Format |
+|---------|--------|
+| Chrome / Brave / Edge | CSV |
+| Firefox | CSV |
+| Safari | CSV |
+| Opera | CSV |
+| Vivaldi | CSV |
+| Tor Browser | CSV |
+| Samsung Internet | CSV |
+| UC Browser | CSV |
+| Yandex Browser | CSV |
+| DuckDuckGo | CSV |
+
+### Password Managers
+| Manager | Format |
+|---------|--------|
+| Bitwarden | CSV, JSON |
+| Proton Pass | JSON |
+| 1Password | CSV, 1PUX |
+| LastPass | CSV |
+| Dashlane | CSV, JSON |
+| Keeper | CSV |
+| NordPass | CSV |
+| RoboForm | CSV |
+| KeePass | CSV, XML |
+| Enpass | CSV, JSON |
+| Zoho Vault | CSV |
+| Sticky Password | CSV |
+| LogMeOnce | CSV |
+| RememBear | CSV |
+| KeeWeb | JSON |
+| Buttercup | JSON |
+| LessPass | JSON |
+| Passbolt | JSON |
+| Padloc | JSON |
+| TeamPass | CSV |
+| Passwork | JSON |
+| CommonKey | CSV |
+| Myki | CSV |
+| True Key | CSV |
+| Intuitive Password | CSV |
+| Password Boss | CSV |
+| SplashID | CSV |
+| mSecure | CSV |
+| DataVault | CSV |
+| Secrets | CSV |
+| Codebook | CSV |
+| Strongbox | CSV |
+| Minimalist | JSON |
+| Passky | JSON |
+| Bitwarden_RS | JSON |
+| Keychain | CSV |
+
+---
+
+## 🛠️ Tech Stack
+
+- **HTML5** — Semantic markup, PWA manifest
+- **CSS3** — Glassmorphism, dark/light mode, responsive grid, CSS variables
+- **Vanilla JavaScript** — No frameworks, no libraries, no build tools
+- **Web Crypto API** — AES-256-GCM encryption, PBKDF2 key derivation
+- **Service Worker** — Offline-first caching
+- **Zero dependencies** — Everything is self-hosted
+
+---
+
+## 📁 File Structure
 
 ```
-/
-├── index.html      # Main app page
-├── styles.css      # All CSS styling
-├── script.js       # All JavaScript logic
-├── manifest.json   # PWA manifest
-├── sw.js           # Service Worker
-└── privacy.html    # Privacy policy
+PwdCleaner/
+├── index.html              # Main application
+├── styles.css              # All CSS (glassmorphism, responsive)
+├── script.js               # All JavaScript (parsing, encryption, UI)
+├── manifest.json           # PWA manifest
+├── sw.js                   # Service Worker (offline caching)
+├── privacy.html            # Privacy policy page (with live score)
+├── PRIVACY.md              # Full privacy policy (15 sections)
+├── README.md               # This file
+├── CHANGELOG.md            # Version history
+├── CONTRIBUTING.md         # Contribution guidelines
+├── robots.txt              # Search engine rules
+├── sitemap.xml             # Sitemap
+├── .gitignore              # Git ignore rules
+├── .github/workflows/
+│   └── deploy.yml          # GitHub Actions CI/CD
+├── extension/
+│   ├── manifest.json       # Browser extension manifest
+│   ├── popup.html          # Extension popup UI
+│   └── icons/              # Extension icons (SVG)
+└── lib/                    # Empty (future use)
 ```
 
-## Contributing
+---
+
+## 🚀 Deployment
+
+### GitHub Pages (Recommended)
+```bash
+git clone https://github.com/SudhirDevOps1/PwdCleaner.git
+cd PwdCleaner
+git push origin main
+# GitHub Actions auto-deploys to https://sudhirdevops1.github.io/PwdCleaner/
+```
+
+### Local
+```bash
+git clone https://github.com/SudhirDevOps1/PwdCleaner.git
+cd PwdCleaner
+# Open index.html in any browser — that's it!
+```
+
+### Self-Hosted
+Upload all files to any static web server (Nginx, Apache, Vercel, Netlify, Cloudflare Pages).
+
+---
+
+## 🔒 Privacy
+
+- **Zero data collection** — We don't know you exist
+- **Zero tracking** — No analytics, no cookies, no fingerprints
+- **Zero external requests** — Everything runs in your browser
+- **Client-side only** — No backend, no database, no API
+- **Open source** — Every line of code is auditable
+
+See [PRIVACY.md](PRIVACY.md) for the full privacy policy.
+
+---
+
+## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## Changelog
+---
+
+## 📋 Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
-## License
+---
 
-MIT License - See LICENSE file.
+## 📜 License
 
-## Contact
+MIT License — see [LICENSE](LICENSE)
 
+---
+
+## 👤 Author
+
+Created with ❤️ by **[@SudhirDevOps1](https://github.com/SudhirDevOps1)**
+
+- GitHub: [github.com/SudhirDevOps1](https://github.com/SudhirDevOps1)
+- LinkedIn: [linkedin.com/in/developer](https://linkedin.com/in/developer)
+- Twitter: [twitter.com/developer](https://twitter.com/developer)
 - Email: developer@example.com
-- LinkedIn: https://linkedin.com/in/developer
-- Twitter: https://twitter.com/developer
-- Website: https://privmitlab.github.io
+
+---
+
+> **Proton Pass team**, please bring an official auto duplicate removal and merge tool as soon as possible. Until then, use **PwdCleaner** 👉 [https://sudhirdevops1.github.io/PwdCleaner/](https://sudhirdevops1.github.io/PwdCleaner/)

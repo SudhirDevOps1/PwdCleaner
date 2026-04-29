@@ -1,8 +1,9 @@
 # PwdCleaner — Privacy Policy
 
-**Effective Date:** January 2025  
-**Last Updated:** January 2025  
-**Version:** 2.0
+**Effective Date:** January 2026  
+**Last Updated:** April 2026  
+**Version:** 2.1  
+**Author:** [@SudhirDevOps1](https://github.com/SudhirDevOps1)
 
 ---
 

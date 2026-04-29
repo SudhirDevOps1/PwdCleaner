@@ -131,6 +131,12 @@ a:hover { text-decoration: underline; }
 }
 .lock-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .lock-hint { display: block; font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.25rem; }
+.lock-field button[type="button"] {
+  transition: color 0.2s;
+}
+.lock-field button[type="button"]:hover {
+  color: var(--accent) !important;
+}
 .lock-btn {
   display: flex; align-items: center; justify-content: center; gap: 0.5rem;
   width: 100%; padding: 0.8rem; background: var(--accent); color: #fff;
