@@ -1096,7 +1096,7 @@
     if (!el) return;
     if (el.classList.contains('masked')) {
       try {
-        const decoded = atob(el.dataset.pw);
+        const decoded = _safeAtob(el.dataset.pw);
         el.textContent = decoded;
         el.classList.remove('masked');
       } catch { el.textContent = '***'; }
@@ -1657,7 +1657,7 @@
   function showToast(message, type = 'info') {
     const container = $('#toastContainer');
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = `toast toast-${type}`;
     const icons = {
       success: '✓',
       error: '✕',
@@ -1739,6 +1739,16 @@
   }
 
   // ===== HELPERS =====
+  // Unicode-safe base64 encode/decode (for hiding passwords in data-pw attributes)
+  function _safeBtoa(str) {
+    try { return btoa(unescape(encodeURIComponent(str || ''))); }
+    catch { return btoa(''); }
+  }
+  function _safeAtob(b64) {
+    try { return decodeURIComponent(escape(atob(b64))); }
+    catch { return '***'; }
+  }
+
   function escapeHtml(str) {
     if (!str) return '';
     const div = document.createElement('div');
@@ -2733,7 +2743,7 @@
             <div class="entry-url">${escapeHtml(truncate(e.url, 40))}</div>
           </div>
           <div class="entry-user">${escapeHtml(e.username)}</div>
-          <div class="entry-password"><span class="masked" onclick="togglePassword(this)" data-pw="${escapeHtml(btoa(unescape(encodeURIComponent(e.password || ''))))}" style="cursor:pointer;">${'*'.repeat(Math.min((e.password || '').length, 12))}</span></div>
+          <div class="entry-password"><span class="masked" onclick="togglePassword(this)" data-pw="${escapeHtml(_safeBtoa(e.password || ''))}" style="cursor:pointer;">${'*'.repeat(Math.min((e.password || '').length, 12))}</span></div>
           <div><span class="strength-dot ${strength.level}" title="${strength.label} (${strength.score})"></span></div>
           <div>
             <button class="entry-edit-btn" onclick="window.openEditModal(${i})" title="Edit entry">
