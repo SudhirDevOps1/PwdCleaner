@@ -227,6 +227,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
+## ⚠️ Limitations
+
+See [LIMITATIONS.md](LIMITATIONS.md) for known limitations, security caveats, and workarounds.
+
 ## 📋 Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.

@@ -284,3 +284,5 @@ If you have privacy concerns, security vulnerability reports, or questions:
 ---
 
 *This privacy policy applies to the PwdCleaner web application and browser extension only. It does not apply to any third-party password managers whose data formats PwdCleaner can parse.*
+
+**See also:** [LIMITATIONS.md](LIMITATIONS.md) for known limitations, security caveats, and workarounds.
