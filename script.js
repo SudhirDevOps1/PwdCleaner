@@ -1372,7 +1372,8 @@
         updateStats();
         renderDuplicateGroups();
         renderAllEntries();
-        saveToStorage();
+        localStorage.removeItem('pwd-entries');
+        localStorage.removeItem('pwd-encrypted');
         $('#resultsSection').style.display = 'none';
         $('#entriesSection').style.display = 'none';
         if ($('#searchSection')) $('#searchSection').style.display = 'none';
@@ -1604,6 +1605,8 @@
     try {
       const encrypted = await encryptData(state.entries, state.masterPassphrase);
       localStorage.setItem('pwd-encrypted', JSON.stringify(encrypted));
+      // NEVER store plaintext — remove any leftover
+      localStorage.removeItem('pwd-entries');
     } catch (e) {
       console.warn('Auto-encrypt failed:', e);
     }
@@ -1649,17 +1652,63 @@
     return false;
   }
 
-  // ===== STORAGE (always encrypted) =====
+  // ===== STORAGE (ALWAYS ENCRYPTED — never plaintext in localStorage) =====
+  let _saveTimer = null;
+
   function saveToStorage() {
+    // Always encrypt before saving to localStorage
+    // Debounced: waits 200ms after last call to avoid encrypting on every keystroke
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => _saveEncryptedToStorage(), 200);
+  }
+
+  async function _saveEncryptedToStorage() {
+    if (!state.masterPassphrase) return;
     try {
-      // Keep plaintext as backup for quick access
-      localStorage.setItem('pwd-entries', JSON.stringify(state.entries));
+      const encrypted = await encryptData(state.entries, state.masterPassphrase);
+      localStorage.setItem('pwd-encrypted', JSON.stringify(encrypted));
+      // NEVER store plaintext — remove any leftover
+      localStorage.removeItem('pwd-entries');
     } catch (e) {
-      console.warn('Storage save failed:', e);
+      console.warn('Encrypted save failed:', e);
     }
   }
 
   function loadFromStorage() {
+    // Priority 1: Try encrypted data (requires passphrase)
+    // Priority 2: Fallback to plaintext (legacy migration, then delete it)
+    try {
+      const enc = localStorage.getItem('pwd-encrypted');
+      if (enc && state.masterPassphrase) {
+        try {
+          const encObj = JSON.parse(enc);
+          decryptData(encObj, state.masterPassphrase).then(data => {
+            if (Array.isArray(data)) {
+              state.entries = data;
+              updateStats();
+              renderAllEntries();
+              populateSourceFilter();
+              // Plaintext no longer needed — clean up
+              localStorage.removeItem('pwd-entries');
+            }
+          }).catch(() => {
+            // Wrong passphrase or corrupted — try plaintext fallback
+            _loadPlaintextFallback();
+          });
+          return; // async decrypt in progress
+        } catch (_) {
+          // Encrypted parse failed — try plaintext
+        }
+      }
+
+      // No encrypted data or no passphrase yet — try plaintext (legacy)
+      _loadPlaintextFallback();
+    } catch (e) {
+      console.warn('Storage load failed:', e);
+    }
+  }
+
+  function _loadPlaintextFallback() {
     try {
       const raw = localStorage.getItem('pwd-entries');
       if (raw) {
@@ -1668,10 +1717,15 @@
           state.entries = data;
           updateStats();
           renderAllEntries();
+          populateSourceFilter();
+          // Migrate: encrypt immediately and remove plaintext
+          if (state.masterPassphrase) {
+            _saveEncryptedToStorage();
+          }
         }
       }
     } catch (e) {
-      console.warn('Storage load failed:', e);
+      console.warn('Plaintext fallback failed:', e);
     }
   }
 

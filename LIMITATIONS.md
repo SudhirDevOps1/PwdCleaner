@@ -14,11 +14,13 @@ PwdCleaner is a **local-only, client-side** tool. It is NOT a replacement for a 
 
 ## 🔒 Security Limitations
 
-### 1. Browser Storage is NOT Secure Storage
-- Passwords stored in `localStorage` are **plaintext by default** (encrypted only if you use the local encryption toggle)
-- `localStorage` is accessible to any JavaScript on the same origin
-- If your browser has a malicious extension, it could read `localStorage`
-- **Mitigation:** Use the "Auto-Clean After Export" feature, or manually click "Clear All Data" after exporting
+### 1. Browser Storage Encryption (v2.1+ — FIXED)
+- ~~Passwords stored in `localStorage` are **plaintext by default**~~ → **FIXED in v2.1**
+- As of v2.1, ALL data in `localStorage` is **encrypted with AES-256-GCM** (PBKDF2 100k iterations) using your master passphrase
+- **Plaintext passwords are NEVER written to localStorage** — the `pwd-entries` plaintext key is automatically removed after every encrypted save
+- The encrypted blob (`pwd-encrypted`) is what gets stored — unreadable without your passphrase
+- **Remaining risk:** If a malicious extension has access to the same origin AND can read JavaScript memory, it could theoretically extract the passphrase from `state.masterPassphrase` in RAM. This is a browser limitation, not a PwdCleaner bug.
+- **Mitigation:** Close the browser tab after exporting, use "Auto-Clean After Export", use a clean browser profile without suspicious extensions
 
 ### 2. Master Passphrase is Session-Based
 - The passphrase you enter on the lock screen is held in JavaScript memory (`state.masterPassphrase`)
@@ -269,4 +271,5 @@ PwdCleaner is provided **"as is"** without warranty of any kind. The authors are
 
 **Last Updated:** April 2026  
 **Version:** 2.1.0  
+**Status:** localStorage encryption fix applied (v2.1) — no plaintext passwords in storage  
 **Author:** [@SudhirDevOps1](https://github.com/SudhirDevOps1)

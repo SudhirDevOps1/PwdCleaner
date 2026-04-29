@@ -295,6 +295,10 @@
           Encrypted File (AES-256-GCM · Zero-Knowledge)
         </div>
         <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:1rem;">Your master passphrase is: <strong id="masterPassDisplay" style="color:var(--accent);">—</strong> · Data is always encrypted in memory.</p>
+        <div id="storageSecurityBadge" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;font-size:0.78rem;color:#22c55e;margin-bottom:0.75rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span id="storageSecurityText">🔒 localStorage: AES-256-GCM encrypted (PBKDF2 100k) — no plaintext passwords stored</span>
+        </div>
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
           <button class="btn btn-primary" id="encExportBtn" style="background:#22c55e;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="10 9 12 7 14 9"/><line x1="12" y1="7" x2="12" y2="17"/></svg>
