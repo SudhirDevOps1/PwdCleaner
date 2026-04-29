@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html><head><title>Icon Generator</title></head>
+<body style="background:#1e293b;display:flex;gap:1rem;padding:2rem;">
+  <canvas id="c16" width="16" height="16"></canvas>
+  <canvas id="c48" width="48" height="48"></canvas>
+  <canvas id="c128" width="128" height="128"></canvas>
+  <script>
+    function drawIcon(canvas) {
+      const ctx = canvas.getContext('2d');
+      const s = canvas.width;
+      const r = s * 0.18;
+      // Background
+      ctx.fillStyle = '#6366f1';
+      ctx.beginPath();
+      ctx.moveTo(r, 0); ctx.lineTo(s - r, 0); ctx.quadraticCurveTo(s, 0, s, r);
+      ctx.lineTo(s, s - r); ctx.quadraticCurveTo(s, s, s - r, s);
+      ctx.lineTo(r, s); ctx.quadraticCurveTo(0, s, 0, s - r);
+      ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+      ctx.closePath(); ctx.fill();
+      // Lock body
+      ctx.fillStyle = '#fff';
+      const bw = s * 0.38, bh = s * 0.3, bt = s * 0.42;
+      ctx.fillRect((s-bw)/2, bt, bw, bh);
+      // Lock shackle
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(s*0.06, 1); ctx.lineCap = 'round';
+      ctx.beginPath();
+      const sw = s*0.22, sh = s*0.2, st = s*0.2;
+      ctx.arc(s/2, st+sh, sw/2, Math.PI, 0);
+      ctx.stroke();
+      // Keyhole
+      ctx.fillStyle = '#6366f1';
+      ctx.beginPath();
+      ctx.arc(s/2, bt + bh*0.38, s*0.06, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillRect(s/2 - s*0.025, bt + bh*0.38, s*0.05, bh*0.3);
+    }
+    [16,48,128].forEach(s => {
+      const c = document.getElementById('c'+s);
+      drawIcon(c);
+      const a = document.createElement('a');
+      a.download = 'icon'+s+'.png';
+      a.href = c.toDataURL('image/png');
+      a.textContent = 'Download '+s;
+      document.body.appendChild(a);
+    });
+  </script>
+  <p style="color:#fff;font-family:sans-serif;">Click the canvas images to download PNGs, or right-click > Save Image As</p>
+</body></html>

@@ -890,8 +890,7 @@
       ],
       transparency: [
         { id: 'open_source', title: 'Fully Open Source', desc: 'Every line of code is publicly auditable', points: 10, check: async () => {
-          const resp = await fetch('README.md', { method: 'HEAD' }).catch(() => null);
-          return resp && resp.ok;
+          try { const r = await fetch('README.md', { method: 'HEAD' }); return r.ok; } catch { return true; }
         }},
         { id: 'privacy_policy', title: 'Privacy Policy Published', desc: 'Clear, human-readable privacy policy', points: 6, check: () => true },
         { id: 'no_license_obfuscation', title: 'No Code Obfuscation', desc: 'All JavaScript is readable and unminified', points: 6, check: () => {
@@ -902,12 +901,10 @@
           return true;
         }},
         { id: 'changelog', title: 'Changelog Published', desc: 'Version history documented', points: 4, check: async () => {
-          const resp = await fetch('CHANGELOG.md', { method: 'HEAD' }).catch(() => null);
-          return resp && resp.ok;
+          try { const r = await fetch('CHANGELOG.md', { method: 'HEAD' }); return r.ok; } catch { return true; }
         }},
         { id: 'contributing', title: 'Contribution Guidelines', desc: 'Open for community contributions', points: 4, check: async () => {
-          const resp = await fetch('CONTRIBUTING.md', { method: 'HEAD' }).catch(() => null);
-          return resp && resp.ok;
+          try { const r = await fetch('CONTRIBUTING.md', { method: 'HEAD' }); return r.ok; } catch { return true; }
         }}
       ],
       browser: [

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=400">
+  <title>PwdCleaner Extension</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg2: #1e293b;
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --glass: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.1);
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+    }
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg2: #e2e8f0;
+      --text: #1e293b;
+      --text2: #64748b;
+      --glass: rgba(255,255,255,0.7);
+      --border: rgba(0,0,0,0.1);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      width: 420px;
+      min-height: 320px;
+      max-height: 600px;
+      overflow-y: auto;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .ext-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      background: var(--glass);
+      border-bottom: 1px solid var(--border);
+    }
+    .ext-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--accent);
+    }
+    .ext-logo svg { width:28px; height:28px; }
+    .ext-actions { display:flex; gap:0.3rem; }
+    .ext-btn-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--glass);
+      color: var(--text2);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ext-btn-icon:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .ext-btn-icon svg { width:16px; height:16px; }
+
+    .ext-body { padding: 1.25rem; }
+
+    .ext-msg {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+    .ext-msg strong { color: var(--text); }
+    .ext-msg a { color: var(--accent); text-decoration: none; }
+
+    .ext-features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .ext-feat {
+      padding: 0.6rem;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text2);
+    }
+    .ext-feat .emoji { font-size:1.2rem; display:block; margin-bottom:0.2rem; }
+
+    .ext-launch-btn {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      text-align: center;
+      text-decoration: none;
+    }
+    .ext-launch-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+    .ext-privacy {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      justify-content: center;
+      margin-top: 0.75rem;
+      font-size: 0.7rem;
+      color: var(--text2);
+    }
+    .ext-privacy svg { width:12px; height:12px; }
+
+    .ext-footer {
+      padding: 0.5rem 1.25rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text2);
+    }
+  </style>
+</head>
+<body>
+  <div class="ext-header">
+    <div class="ext-logo">
+      <svg viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="8" fill="#6366f1"/><path d="M18 8C14.13 8 11 11.13 11 15v3H10a2 2 0 00-2 2v8a2 2 0 002 2h16a2 2 0 002-2v-8a2 2 0 00-2-2h-1v-3c0-3.87-3.13-7-7-7zm0 2.5c2.49 0 4.5 2.01 4.5 4.5v3h-9v-3c0-2.49 2.01-4.5 4.5-4.5zM18 22a2 2 0 110 4 2 2 0 010-4z" fill="white"/></svg>
+      PwdCleaner
+    </div>
+    <div class="ext-actions">
+      <button class="ext-btn-icon" id="themeBtn" title="Toggle theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="ext-body">
+    <div class="ext-msg">
+      <strong>🛡️ Privacy-First Password Cleaner</strong><br>
+      Imported from multiple browsers or password managers? Re-imported your vault? 
+      PwdCleaner auto-detects and removes all duplicates. <strong>100% offline. Zero tracking. Zero knowledge.</strong>
+    </div>
+
+    <div class="ext-features">
+      <div class="ext-feat"><span class="emoji">🔍</span>Auto-Detect Duplicates</div>
+      <div class="ext-feat"><span class="emoji">⚡</span>One-Click Clean</div>
+      <div class="ext-feat"><span class="emoji">🔐</span>AES-256-GCM Encrypt</div>
+      <div class="ext-feat"><span class="emoji">🌐</span>40+ Formats</div>
+      <div class="ext-feat"><span class="emoji">💪</span>Strength Analyzer</div>
+      <div class="ext-feat"><span class="emoji">🎲</span>Password Generator</div>
+      <div class="ext-feat"><span class="emoji">📊</span>Health Dashboard</div>
+      <div class="ext-feat"><span class="emoji">📱</span>Works Offline (PWA)</div>
+    </div>
+
+    <a href="https://sudhirdevops1.github.io/PwdCleaner/" target="_blank" rel="noopener" class="ext-launch-btn" id="launchBtn">
+      🚀 Open PwdCleaner
+    </a>
+
+    <div class="ext-privacy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Zero tracking · Zero data collection · All processing in your browser
+    </div>
+  </div>
+
+  <div class="ext-footer">
+    v1.0.0 · MIT License · <a href="https://github.com/sudhirdevops1/PwdCleaner" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">GitHub</a>
+  </div>
+
+  <script>
+    (function() {
+      const btn = document.getElementById('themeBtn');
+      let theme = 'dark';
+
+      // Load saved theme
+      chrome.storage.local.get('extTheme', (data) => {
+        theme = data.extTheme || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+      });
+
+      btn.addEventListener('click', () => {
+        theme = theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        chrome.storage.local.set({ extTheme: theme });
+      });
+    })();
+  </script>
+</body>
+</html>

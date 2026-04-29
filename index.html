@@ -10,32 +10,76 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-container">
+  <!-- ===== LOCK SCREEN (Master Passphrase Gate) ===== -->
+  <div class="lock-screen" id="lockScreen">
+    <div class="lock-card">
+      <div class="lock-icon">
+        <svg viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="38" stroke="#6366f1" stroke-width="3" fill="rgba(99,102,241,0.05)"/>
+          <rect x="24" y="36" width="32" height="24" rx="4" fill="#6366f1"/>
+          <path d="M30 36v-8a10 10 0 0120 0v8" stroke="#6366f1" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <circle cx="40" cy="46" r="3" fill="#fff"/>
+          <rect x="38.5" y="46" width="3" height="6" rx="1" fill="#fff"/>
+        </svg>
+      </div>
+      <h1>PwdCleaner</h1>
+      <p>Privacy-first · Zero-knowledge · Offline</p>
+
+      <div class="lock-form">
+        <div class="lock-field">
+          <label for="lockMasterPass">🔑 Enter Master Passphrase</label>
+          <input type="password" id="lockMasterPass" placeholder="Your master passphrase..." autocomplete="off">
+          <span class="lock-hint">Required to protect your data. You set this every time.</span>
+        </div>
+        <button class="lock-btn" id="lockEnterBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          Unlock & Enter
+        </button>
+        <div class="lock-divider"><span>OR</span></div>
+        <button class="lock-btn lock-btn-secondary" id="lockDecryptFileBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import & Decrypt Encrypted File (.pwdcleaner)
+        </button>
+        <input type="file" id="lockFileInput" accept=".pwdcleaner,.enc,.encrypted,.json" style="display:none;">
+      </div>
+
+      <div class="lock-badges">
+        <span>🔒 AES-256-GCM</span>
+        <span>🛡️ PBKDF2 200k</span>
+        <span>🌐 100% Offline</span>
+        <span>👁️ Zero Knowledge</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container" id="appMain" style="display:none;">
     <!-- Header -->
     <header class="header">
-      <div class="logo">
-        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="36" height="36" rx="8" fill="#6366f1"/>
-          <path d="M18 8C14.13 8 11 11.13 11 15v3H10a2 2 0 00-2 2v8a2 2 0 002 2h16a2 2 0 002-2v-8a2 2 0 00-2-2h-1v-3c0-3.87-3.13-7-7-7zm0 2.5c2.49 0 4.5 2.01 4.5 4.5v3h-9v-3c0-2.49 2.01-4.5 4.5-4.5zM18 22a2 2 0 110 4 2 2 0 010-4z" fill="white"/>
-        </svg>
-        <span>PwdCleaner</span>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-sm btn-secondary" id="installBtn" style="display:none;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-          Install App
-        </button>
-        <button class="btn-icon" id="themeToggle" title="Toggle dark/light mode" aria-label="Toggle theme">
-          <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
-        </button>
+      <div class="header-inner">
+        <div class="logo">
+          <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="36" height="36" rx="8" fill="#6366f1"/>
+            <path d="M18 8C14.13 8 11 11.13 11 15v3H10a2 2 0 00-2 2v8a2 2 0 002 2h16a2 2 0 002-2v-8a2 2 0 00-2-2h-1v-3c0-3.87-3.13-7-7-7zm0 2.5c2.49 0 4.5 2.01 4.5 4.5v3h-9v-3c0-2.49 2.01-4.5 4.5-4.5zM18 22a2 2 0 110 4 2 2 0 010-4z" fill="white"/>
+          </svg>
+          <span>PwdCleaner</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-sm btn-secondary" id="installBtn" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+            Install App
+          </button>
+          <button class="btn-icon" id="themeToggle" title="Toggle dark/light mode" aria-label="Toggle theme">
+            <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+          </button>
+        </div>
       </div>
     </header>
 
     <!-- Hero -->
     <section class="hero">
       <h1>Password Duplicate Cleaner</h1>
-      <p>Privacy-first duplicate detection & universal format converter for 40+ password managers. All processing happens locally in your browser.</p>
+      <p>Imported from multiple browsers & password managers? Re-imported your vault? PwdCleaner auto-detects and removes all duplicates in one click. 100% offline, zero-knowledge, privacy-first.</p>
       <div class="badge-row">
         <span class="badge">🔒 Zero Tracking</span>
         <span class="badge">🌐 40+ Formats</span>
@@ -238,23 +282,23 @@
         </button>
       </div>
 
-      <!-- Encryption Toggle -->
+      <!-- Encrypted File Actions (always visible, clear buttons) -->
       <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
-        <label class="toggle-wrapper" id="encryptionToggle">
-          <div class="toggle">
-            <input type="checkbox" id="encryptionCheckbox">
-            <span class="toggle-slider"></span>
-          </div>
-          <span class="toggle-label">🔐 Enable Client-Side Encryption (AES-GCM)</span>
-        </label>
-        <div class="encryption-panel" id="encryptionPanel">
-          <div class="controls-row" style="margin-top:0.75rem;">
-            <div class="control-group">
-              <label for="masterPass">Master Passphrase</label>
-              <input type="password" id="masterPass" placeholder="Enter a strong passphrase...">
-            </div>
-            <button class="btn btn-primary btn-sm" id="encryptSaveBtn" style="align-self:flex-end;">Encrypt & Save</button>
-          </div>
+        <div class="section-title" style="margin-bottom:0.75rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          Encrypted File (AES-256-GCM · Zero-Knowledge)
+        </div>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:1rem;">Your master passphrase is: <strong id="masterPassDisplay" style="color:var(--accent);">—</strong> · Data is always encrypted in memory.</p>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="encExportBtn" style="background:#22c55e;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="10 9 12 7 14 9"/><line x1="12" y1="7" x2="12" y2="17"/></svg>
+            🔒 Download Encrypted File
+          </button>
+          <button class="btn btn-secondary" id="encImportBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 13 7 8"/><line x1="12" y1="13" x2="12" y2="3"/></svg>
+            🔓 Import & Decrypt File
+          </button>
+          <input type="file" id="encFileInput" accept=".pwdcleaner,.enc,.encrypted" style="display:none;">
         </div>
       </div>
     </section>
@@ -479,10 +523,45 @@
         Advanced Tools
       </div>
 
+      <!-- One-Click Auto Clean & Merge -->
+      <div class="tool-section" style="background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.15);border-radius:12px;padding:1.25rem;">
+        <h4 style="color:#22c55e;">⚡ One-Click Auto Clean & Merge</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Imported from multiple browsers/managers? Re-imported your vault? This finds all exact duplicates (same website + username + password) and removes extras in one click — keeping the best entry from each group.</p>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" id="autoCleanMergeBtn" style="background:#22c55e;color:#000;font-weight:700;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Auto Clean All Duplicates
+          </button>
+          <span id="autoCleanResult" style="font-size:0.85rem;color:var(--text-secondary);"></span>
+        </div>
+      </div>
+
+      <!-- Encrypted File Export (AES-256-GCM) -->
+      <div class="tool-section" style="background:rgba(99,102,241,0.04);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:1.25rem;">
+        <h4 style="color:var(--accent);">🔐 Encrypted Vault File (.pwdcleaner)</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Download your entire vault as one AES-256-GCM encrypted file. Zero-knowledge — only your master passphrase can decrypt it. Share across devices safely.</p>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:0.85rem;color:var(--accent);font-weight:700;">Passphrase: <span id="toolPassDisplay">same as lock screen</span></span>
+        </div>
+      </div>
+
+      <!-- Auto-Clean After Export -->
+      <div class="tool-section">
+        <h4>🧹 Auto-Clean After Export</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Automatically clear all imported data from browser after exporting — so reimporting the same file won't show old duplicates.</p>
+        <label class="toggle-wrapper" id="autoCleanToggleWrap">
+          <div class="toggle">
+            <input type="checkbox" id="autoCleanAfterExport">
+            <span class="toggle-slider"></span>
+          </div>
+          <span class="toggle-label">Auto-clear data after every export</span>
+        </label>
+      </div>
+
       <!-- Backup / Restore -->
       <div class="tool-section">
         <h4>Backup & Restore</h4>
-        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Create encrypted backup of all data or restore from a backup file.</p>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Create plain JSON backup of all data or restore from a backup file.</p>
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
           <button class="btn btn-secondary btn-sm" id="backupBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -534,6 +613,37 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export Selected
         </button>
+      </div>
+
+      <!-- Encrypted File Terminal / Viewer -->
+      <div class="tool-section" style="background:rgba(34,197,94,0.03);border:1px solid rgba(34,197,94,0.12);border-radius:12px;padding:1.25rem;">
+        <h4 style="color:#22c55e;">🖥️ Encrypted Data Terminal</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Inspect any encrypted .pwdcleaner file to see its raw structure. Also shows export/import logs in real-time. This proves your data is truly encrypted.</p>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+          <button class="btn btn-secondary btn-sm" id="viewEncFileBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Inspect Encrypted File
+          </button>
+          <button class="btn btn-secondary btn-sm" id="clearTerminalBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            Clear Terminal
+          </button>
+          <button class="btn btn-secondary btn-sm" id="demoEncryptBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            Demo: Encrypt & Show Raw Data
+          </button>
+          <input type="file" id="viewEncFileInput" accept=".pwdcleaner,.enc,.encrypted,.json" style="display:none;">
+        </div>
+        <div class="terminal-wrap">
+          <div class="terminal-header">
+            <span>● ● ●</span>
+            <span>PwdCleaner Terminal</span>
+          </div>
+          <pre class="terminal-body" id="terminalOutput">PwdCleaner Terminal v2.0
+Ready. Export or import a file to see encrypted data here.
+Type "Help" → use buttons above.
+──────────────────────────────────────────</pre>
+        </div>
       </div>
 
       <!-- Keyboard Shortcuts -->
@@ -665,13 +775,14 @@
         <div class="footer-section">
           <h4>Resources</h4>
           <a href="privacy.html">Privacy Policy</a>
+          <a href="PRIVACY.md" target="_blank">PRIVACY.md (Full)</a>
           <a href="CONTRIBUTING.md">Contributing</a>
           <a href="CHANGELOG.md">Changelog</a>
           <a href="README.md">Documentation</a>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>Built with ❤️ by PrivMITLab – 100% Client-Side – Zero Tracking – Open Source</p>
+        <p>Created by <a href="https://github.com/SudhirDevOps1" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;">@SudhirDevOps1</a> · Built with ❤️ for privacy · 100% Client-Side · Zero Tracking · Open Source</p>
       </div>
     </footer>
   </div>

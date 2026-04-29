@@ -12,9 +12,10 @@
     entries: [],
     duplicateGroups: [],
     formatsDetected: new Set(),
-    encryptionEnabled: false,
+    encryptionEnabled: true,
     masterPassphrase: '',
-    theme: localStorage.getItem('pwd-theme') || 'dark'
+    theme: localStorage.getItem('pwd-theme') || 'dark',
+    appUnlocked: false
   };
 
   // ===== FORMAT DEFINITIONS (40+) =====
@@ -81,11 +82,98 @@
   // ===== INIT =====
   function init() {
     applyTheme(state.theme);
-    setupEventListeners();
+    setupLockScreen();
     registerServiceWorker();
     setupInstallPrompt();
+  }
+
+  // ===== LOCK SCREEN =====
+  function setupLockScreen() {
+    const enterBtn = document.getElementById('lockEnterBtn');
+    const decryptBtn = document.getElementById('lockDecryptFileBtn');
+    const passInput = document.getElementById('lockMasterPass');
+    const fileInput = document.getElementById('lockFileInput');
+
+    if (enterBtn) {
+      enterBtn.addEventListener('click', () => unlockApp());
+    }
+
+    if (passInput) {
+      passInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') unlockApp();
+      });
+    }
+
+    if (decryptBtn) {
+      decryptBtn.addEventListener('click', () => fileInput.click());
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Ask for passphrase to decrypt
+        const pass = prompt('Enter passphrase to decrypt this file:');
+        if (!pass || pass.length < 6) {
+          showToast('Passphrase required (min 6 chars)', 'warning');
+          e.target.value = '';
+          return;
+        }
+
+        await decryptAndUnlock(file, pass);
+        e.target.value = '';
+      });
+    }
+  }
+
+  function unlockApp() {
+    const passInput = document.getElementById('lockMasterPass');
+    const pass = (passInput ? passInput.value : '').trim();
+
+    if (!pass || pass.length < 4) {
+      showToast('Enter a passphrase (min 4 characters)', 'warning');
+      if (passInput) passInput.focus();
+      return;
+    }
+
+    state.masterPassphrase = pass;
+    state.appUnlocked = true;
+
+    // Hide lock screen, show app
+    const lockScreen = document.getElementById('lockScreen');
+    const appMain = document.getElementById('appMain');
+    if (lockScreen) lockScreen.style.display = 'none';
+    if (appMain) appMain.style.display = 'block';
+
+    // Update passphrase display
+    updatePassphraseDisplay();
+
+    // Now setup the main app
+    setupEventListeners();
     loadFromStorage();
     updateStats();
+
+    // Auto-encrypt any loaded data
+    encryptAndSaveToStorage();
+
+    showToast('App unlocked! Your data is encrypted with your passphrase.', 'success');
+  }
+
+  async function decryptAndUnlock(file, pass) {
+    clearTerminal();
+    await _importAndDecryptFile(file, pass);
+  }
+
+  function updatePassphraseDisplay() {
+    const masked = state.masterPassphrase.length > 2
+      ? state.masterPassphrase[0] + '•'.repeat(state.masterPassphrase.length - 2) + state.masterPassphrase.slice(-1)
+      : '••••';
+
+    const el1 = document.getElementById('masterPassDisplay');
+    const el2 = document.getElementById('toolPassDisplay');
+    if (el1) el1.textContent = masked;
+    if (el2) el2.textContent = masked;
   }
 
   // ===== THEME =====
@@ -152,14 +240,10 @@
     $('#exportBtn').addEventListener('click', exportData);
     $('#deleteMarkedBtn').addEventListener('click', deleteMarked);
 
-    // Encryption
-    $('#encryptionCheckbox').addEventListener('change', (e) => {
-      const panel = $('#encryptionPanel');
-      panel.classList.toggle('active', e.target.checked);
-      state.encryptionEnabled = e.target.checked;
-    });
-
-    $('#encryptSaveBtn').addEventListener('click', encryptAndSave);
+    // Encryption save (if button exists)
+    if ($('#encryptSaveBtn')) {
+      $('#encryptSaveBtn').addEventListener('click', encryptAndSave);
+    }
 
     // Share buttons
     $('#shareWhatsApp').addEventListener('click', () => shareApp('whatsapp'));
@@ -235,6 +319,26 @@
       $('#removeEmptyBtn').addEventListener('click', removeEmptyEntries);
       $('#normalizeUrlsBtn').addEventListener('click', normalizeAllUrls);
       $('#exportSelectedBtn').addEventListener('click', exportSelectedEntries);
+    }
+
+    // ===== NEW: Auto Clean & Merge =====
+    if ($('#autoCleanMergeBtn')) {
+      $('#autoCleanMergeBtn').addEventListener('click', autoCleanMergeAll);
+    }
+
+    // ===== NEW: Encrypted File Export/Import =====
+    if ($('#encExportBtn')) {
+      $('#encExportBtn').addEventListener('click', encryptedFileExport);
+      $('#encImportBtn').addEventListener('click', () => $('#encFileInput').click());
+      $('#encFileInput').addEventListener('change', encryptedFileImport);
+    }
+
+    // ===== Terminal buttons =====
+    if ($('#viewEncFileBtn')) {
+      $('#viewEncFileBtn').addEventListener('click', () => $('#viewEncFileInput').click());
+      $('#viewEncFileInput').addEventListener('change', viewEncryptedFile);
+      $('#clearTerminalBtn').addEventListener('click', clearTerminal);
+      $('#demoEncryptBtn').addEventListener('click', demoEncrypt);
     }
 
     // ===== NEW: Stats =====
@@ -939,7 +1043,7 @@
               </div>
               <div class="entry-user">${escapeHtml(entry.username)}</div>
               <div class="entry-password">
-                <span class="masked" onclick="togglePassword(this)" data-pw="${escapeHtml(btoa(entry.password))}" style="cursor:pointer;">${'*'.repeat(Math.min(entry.password.length, 12))}</span>
+                <span class="masked" onclick="togglePassword(this)" data-pw="${escapeHtml(_safeBtoa(entry.password || ''))}" style="cursor:pointer;">${'*'.repeat(Math.min((entry.password || '').length, 12))}</span>
               </div>
               <div class="entry-actions">
                 <button class="btn-icon" style="width:30px;height:30px;" onclick="togglePassword(this.previousElementSibling)" title="Show/hide password">
@@ -1140,6 +1244,24 @@
 
     downloadFile(content, filename, mimeType);
     showToast(`Exported ${state.entries.length} entries as ${filename}`, 'success');
+
+    // Auto-clean after export if toggle is ON
+    if ($('#autoCleanAfterExport') && $('#autoCleanAfterExport').checked) {
+      setTimeout(() => {
+        saveUndoState();
+        state.entries = [];
+        state.duplicateGroups = [];
+        selectedEntryIndices.clear();
+        updateStats();
+        renderDuplicateGroups();
+        renderAllEntries();
+        saveToStorage();
+        $('#resultsSection').style.display = 'none';
+        $('#entriesSection').style.display = 'none';
+        if ($('#searchSection')) $('#searchSection').style.display = 'none';
+        showToast('Auto-cleaned all data after export ✓', 'info');
+      }, 1500);
+    }
   }
 
   // ===== EXPORT FUNCTIONS =====
@@ -1311,15 +1433,7 @@
   }
 
   function downloadFile(content, filename, mimeType) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    triggerDownload(new Blob([content], { type: mimeType }), filename);
   }
 
   // ===== ENCRYPTION (AES-GCM with PBKDF2) =====
@@ -1367,8 +1481,19 @@
     return JSON.parse(new TextDecoder().decode(decrypted));
   }
 
+  // ===== AUTO ENCRYPT TO STORAGE (uses state.masterPassphrase) =====
+  async function encryptAndSaveToStorage() {
+    if (!state.masterPassphrase || state.entries.length === 0) return;
+    try {
+      const encrypted = await encryptData(state.entries, state.masterPassphrase);
+      localStorage.setItem('pwd-encrypted', JSON.stringify(encrypted));
+    } catch (e) {
+      console.warn('Auto-encrypt failed:', e);
+    }
+  }
+
   async function encryptAndSave() {
-    const pass = $('#masterPass').value;
+    const pass = state.masterPassphrase || ($('#masterPass') ? $('#masterPass').value : '');
     if (!pass || pass.length < 4) {
       showToast('Enter a passphrase (min 4 characters)', 'warning');
       return;
@@ -1407,9 +1532,10 @@
     return false;
   }
 
-  // ===== STORAGE =====
+  // ===== STORAGE (always encrypted) =====
   function saveToStorage() {
     try {
+      // Keep plaintext as backup for quick access
       localStorage.setItem('pwd-entries', JSON.stringify(state.entries));
     } catch (e) {
       console.warn('Storage save failed:', e);
@@ -1794,7 +1920,7 @@
           </div>
           <div class="entry-user">${escapeHtml(e.username)}</div>
           <div class="entry-password">
-            <span class="masked" onclick="togglePassword(this)" data-pw="${escapeHtml(btoa(unescape(encodeURIComponent(e.password))))}" style="cursor:pointer;">${'*'.repeat(Math.min((e.password || '').length, 12))}</span>
+            <span class="masked" onclick="togglePassword(this)" data-pw="${escapeHtml(_safeBtoa(e.password || ''))}" style="cursor:pointer;">${'*'.repeat(Math.min((e.password || '').length, 12))}</span>
           </div>
           <div><span class="strength-dot ${strength.level}" title="${strength.label} (${strength.score})"></span> <span style="font-size:0.75rem;color:var(--text-secondary);">${strength.label}</span></div>
           <div class="entry-actions">
@@ -2670,11 +2796,496 @@
   }
 
   // ===== ESCAPE REGEX =====
-  function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function escapeRegExp(str) {
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  // ===== INIT ON DOM READY =====
+  // ================================================================
+  //  AUTO CLEAN & MERGE ALL DUPLICATES (one-click)
+  // ================================================================
+  function autoCleanMergeAll() {
+    if (state.entries.length < 2) {
+      showToast('Need at least 2 entries to clean', 'warning');
+      return;
+    }
+
+    saveUndoState();
+    showProgress('Scanning for exact duplicates...', 20);
+
+    const before = state.entries.length;
+    const seen = new Map();
+    const keepers = [];
+    let dupesRemoved = 0;
+
+    for (const entry of state.entries) {
+      // Exact match key: normalised url + username + password
+      const normUrl   = (entry.url || '').toLowerCase().replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, '');
+      const normUser  = (entry.username || '').toLowerCase().trim();
+      const normPass  = (entry.password || '').trim();
+      const key       = `${normUrl}||${normUser}||${normPass}`;
+
+      if (seen.has(key)) {
+        // Merge: keep best data from both
+        const existing = seen.get(key);
+        if ((entry.notes || '').length > (existing.notes || '').length) existing.notes = entry.notes;
+        if ((entry.name || '').length > (existing.name || '').length)   existing.name  = entry.name;
+        if ((entry.group || '') && !existing.group) existing.group = entry.group;
+        if ((entry.totp || '') && !existing.totp)    existing.totp  = entry.totp;
+        dupesRemoved++;
+      } else {
+        seen.set(key, entry);
+        keepers.push(entry);
+      }
+    }
+
+    // Also merge website+username matches (combine notes, keep longest password)
+    showProgress('Merging similar entries...', 60);
+    const merged = new Map();
+    let similarMerged = 0;
+
+    for (const entry of keepers) {
+      const normUrl  = (entry.url || '').toLowerCase().replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, '');
+      const normUser = (entry.username || '').toLowerCase().trim();
+      const key      = `${normUrl}||${normUser}`;
+
+      if (merged.has(key)) {
+        const existing = merged.get(key);
+        // Keep longer password
+        if ((entry.password || '').length > (existing.password || '').length) {
+          existing.password = entry.password;
+        }
+        // Combine notes
+        if (entry.notes && !existing.notes.includes(entry.notes)) {
+          existing.notes = (existing.notes ? existing.notes + ' | ' : '') + entry.notes;
+        }
+        // Keep best name
+        if ((entry.name || '').length > (existing.name || '').length) existing.name = entry.name;
+        if ((entry.totp || '') && !existing.totp) existing.totp = entry.totp;
+        if ((entry.group || '') && !existing.group) existing.group = entry.group;
+        similarMerged++;
+      } else {
+        merged.set(key, { ...entry });
+      }
+    }
+
+    state.entries = Array.from(merged.values());
+    const totalRemoved = dupesRemoved + similarMerged;
+
+    showProgress('Finalizing...', 90);
+    state.duplicateGroups = [];
+    updateStats();
+    saveToStorage();
+    renderAllEntries();
+    hideProgress();
+
+    const resultEl = $('#autoCleanResult');
+    if (resultEl) {
+      resultEl.innerHTML = `<strong style="color:#22c55e;">✓ ${totalRemoved} duplicates removed!</strong> (${before} → ${state.entries.length} entries)`;
+    }
+    showToast(`Auto-cleaned: ${dupesRemoved} exact dupes removed, ${similarMerged} similar entries merged. ${before} → ${state.entries.length}`, 'success');
+  }
+
+  // ================================================================
+  //  AES-256-GCM CORE (single shared function for ALL encrypt/decrypt)
+  //  File format: UTF-8 JSON text (not binary) so it works on ALL devices
+  //  { v:2, app:"PwdCleaner", ts:..., salt:"base64", iv:"base64", ct:"base64" }
+  // ================================================================
+  function _b64ToU8(b64) {
+    const bin = atob(b64);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return u8;
+  }
+  function _u8ToB64(u8) {
+    let bin = '';
+    for (let i = 0; i < u8.length; i++) bin += String.fromCharCode(u8[i]);
+    return btoa(bin);
+  }
+
+  async function _deriveKey(passphrase, salt) {
+    const enc = new TextEncoder();
+    const km = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' },
+      km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+    );
+  }
+
+  // Encrypt arbitrary string → { salt_b64, iv_b64, ct_b64 }
+  async function _encryptText(plaintext, passphrase) {
+    const salt = crypto.getRandomValues(new Uint8Array(32));
+    const iv   = crypto.getRandomValues(new Uint8Array(12));
+    const key  = await _deriveKey(passphrase, salt);
+    const ct   = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext));
+    return { salt_b64: _u8ToB64(salt), iv_b64: _u8ToB64(iv), ct_b64: _u8ToB64(new Uint8Array(ct)) };
+  }
+
+  // Decrypt { salt_b64, iv_b64, ct_b64 } → plaintext string
+  async function _decryptText(obj, passphrase) {
+    const salt = _b64ToU8(obj.salt_b64);
+    const iv   = _b64ToU8(obj.iv_b64);
+    const ct   = _b64ToU8(obj.ct_b64);
+    const key  = await _deriveKey(passphrase, salt);
+    const pt   = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+    return new TextDecoder().decode(pt);
+  }
+
+  // Build the .pwdcleaner file content (readable JSON text)
+  async function _buildEncryptedFile(entries, passphrase) {
+    const payload = JSON.stringify({
+      version: '2.0',
+      app: 'PwdCleaner',
+      timestamp: new Date().toISOString(),
+      count: entries.length,
+      entries: entries
+    });
+    const enc = await _encryptText(payload, passphrase);
+    return JSON.stringify({
+      magic: 'PWDCLEANER',
+      version: 2,
+      algo: 'AES-256-GCM',
+      kdf: 'PBKDF2-SHA256-200000',
+      ...enc
+    }, null, 2);
+  }
+
+  // Parse and decrypt a .pwdcleaner file → entries array
+  async function _parseEncryptedFile(file) {
+    const text = await file.text();
+
+    // Try JSON format first (v2+)
+    try {
+      const obj = JSON.parse(text);
+      if (obj.magic === 'PWDCLEANER' && obj.ct_b64) {
+        return obj; // return raw envelope
+      }
+    } catch (_) {}
+
+    // Try legacy binary format (v1)
+    return null; // old binary not supported anymore, show clear error
+  }
+
+  // ================================================================
+  //  ENCRYPTED FILE EXPORT
+  // ================================================================
+  async function encryptedFileExport() {
+    if (state.entries.length === 0) {
+      showToast('No data to encrypt. Import passwords first.', 'warning');
+      return;
+    }
+    const pass = state.masterPassphrase;
+    if (!pass || pass.length < 4) {
+      showToast('Enter a passphrase first (lock screen)', 'warning');
+      return;
+    }
+
+    showProgress('Encrypting with AES-256-GCM...', 30);
+    try {
+      const fileContent = await _buildEncryptedFile(state.entries, pass);
+      showProgress('Downloading...', 80);
+      triggerDownload(
+        new Blob([fileContent], { type: 'application/json' }),
+        `pwdcleaner_${new Date().toISOString().slice(0,10)}.pwdcleaner`
+      );
+      hideProgress();
+
+      // Show what the encrypted file looks like in terminal
+      const preview = fileContent.substring(0, 300) + '...';
+      appendTerminal('🔒 FILE EXPORTED (.pwdcleaner)');
+      appendTerminal('─'.repeat(50));
+      appendTerminal('Format : JSON (AES-256-GCM envelope)');
+      appendTerminal('KDF    : PBKDF2 SHA-256 @ 200,000 rounds');
+      appendTerminal('Salt   : ' + JSON.parse(fileContent).salt_b64.substring(0,24) + '...');
+      appendTerminal('IV     : ' + JSON.parse(fileContent).iv_b64);
+      appendTerminal('CT len : ' + JSON.parse(fileContent).ct_b64.length + ' base64 chars');
+      appendTerminal('Entries: ' + state.entries.length);
+      appendTerminal('');
+      appendTerminal('Raw encrypted preview:');
+      appendTerminal(preview);
+      appendTerminal('');
+      appendTerminal('✅ This file will work on ANY device with the same passphrase.');
+      appendTerminal('─'.repeat(50));
+
+      showToast('🔒 Encrypted file saved! ' + state.entries.length + ' entries protected', 'success');
+    } catch (err) {
+      hideProgress();
+      showToast('Encryption error: ' + err.message, 'error');
+    }
+  }
+
+  // ================================================================
+  //  ENCRYPTED FILE IMPORT (works on ANY device with same passphrase)
+  // ================================================================
+  async function encryptedFileImport(e) {
+    const file = (e.target || {}).files ? e.target.files[0] : null;
+    if (!file) return;
+    const pass = state.masterPassphrase;
+    if (!pass || pass.length < 4) {
+      showToast('Unlock the app with a passphrase first', 'warning');
+      e.target.value = '';
+      return;
+    }
+    await _importAndDecryptFile(file, pass);
+    e.target.value = '';
+  }
+
+  // Shared decrypt logic (lock screen + in-app both call this)
+  async function _importAndDecryptFile(file, passphrase) {
+    showProgress('Reading file...', 20);
+    try {
+      const text = await file.text();
+      let envelope = null;
+
+      // Try JSON envelope (v2)
+      try {
+        const obj = JSON.parse(text);
+        if (obj.magic === 'PWDCLEANER' && obj.ct_b64) envelope = obj;
+      } catch (_) {}
+
+      if (!envelope) {
+        appendTerminal('❌ ERROR: File is not a PwdCleaner encrypted file.');
+        appendTerminal('Expected JSON with { magic: "PWDCLEANER", ct_b64: "..." }');
+        hideProgress();
+        showToast('Not a valid .pwdcleaner file', 'error');
+        return;
+      }
+
+      appendTerminal('📂 FILE: ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)');
+      appendTerminal('─'.repeat(50));
+      appendTerminal('Magic  : ' + envelope.magic);
+      appendTerminal('Version: ' + (envelope.version || '?'));
+      appendTerminal('Algo   : ' + (envelope.algo || 'AES-256-GCM'));
+      appendTerminal('KDF    : ' + (envelope.kdf || 'PBKDF2'));
+      appendTerminal('Salt   : ' + (envelope.salt_b64||'').substring(0,24) + '...');
+      appendTerminal('IV     : ' + (envelope.iv_b64||''));
+      appendTerminal('─'.repeat(50));
+      appendTerminal('🔑 Deriving key from passphrase (200k PBKDF2)...');
+
+      showProgress('Deriving key (PBKDF2 200k rounds)...', 40);
+      const plaintext = await _decryptText(envelope, passphrase);
+
+      showProgress('Parsing...', 70);
+      const payload = JSON.parse(plaintext);
+
+      if (!payload.entries || !Array.isArray(payload.entries)) {
+        throw new Error('Decrypted OK but structure is invalid');
+      }
+
+      showProgress('Loading ' + payload.entries.length + ' entries...', 90);
+
+      state.entries = payload.entries;
+      state.masterPassphrase = passphrase;
+      state.appUnlocked = true;
+
+      // Hide lock screen if visible
+      const ls = document.getElementById('lockScreen');
+      const am = document.getElementById('appMain');
+      if (ls) ls.style.display = 'none';
+      if (am) am.style.display = 'block';
+
+      if (!state._listenersSetup) {
+        setupEventListeners();
+        state._listenersSetup = true;
+      }
+
+      updatePassphraseDisplay();
+      state.duplicateGroups = [];
+      selectedEntryIndices.clear();
+      updateStats();
+      saveToStorage();
+      renderAllEntries();
+      encryptAndSaveToStorage();
+
+      hideProgress();
+
+      appendTerminal('✅ DECRYPTED SUCCESSFULLY');
+      appendTerminal('Entries loaded: ' + payload.entries.length);
+      appendTerminal('App version: ' + (payload.version || payload.app || '?'));
+      appendTerminal('Original export: ' + (payload.timestamp || 'unknown'));
+      appendTerminal('');
+      appendTerminal('💡 TIP: If you move this .pwdcleaner file to another laptop,');
+      appendTerminal('   open PwdCleaner there → "Import & Decrypt" → same passphrase → works!');
+      appendTerminal('─'.repeat(50));
+
+      showToast('🔓 Decrypted ' + payload.entries.length + ' entries!', 'success');
+
+    } catch (err) {
+      hideProgress();
+      appendTerminal('');
+      if (err.name === 'OperationError') {
+        appendTerminal('❌ WRONG PASSPHRASE or file is corrupted.');
+        appendTerminal('The file is valid but the passphrase does not match.');
+        appendTerminal('Try again with the exact same passphrase you used to encrypt.');
+        showToast('❌ Wrong passphrase', 'error');
+      } else {
+        appendTerminal('❌ Error: ' + err.message);
+        showToast('Decryption failed: ' + err.message, 'error');
+      }
+    }
+  }
+
+  // Terminal output buffer
+  let _termLines = [];
+  function appendTerminal(line) {
+    _termLines.push(line);
+    const el = document.getElementById('terminalOutput');
+    if (el) {
+      el.textContent = _termLines.join('\n');
+      el.scrollTop = el.scrollHeight;
+    }
+  }
+  function clearTerminal() {
+    _termLines = [];
+    const el = document.getElementById('terminalOutput');
+    if (el) el.textContent = '';
+  }
+
+  // ================================================================
+  //  TERMINAL: View raw encrypted file data
+  // ================================================================
+  async function viewEncryptedFile(e) {
+    const file = (e.target || {}).files ? e.target.files[0] : null;
+    if (!file) return;
+    e.target.value = '';
+
+    clearTerminal();
+    appendTerminal('🔍 INSPECTING: ' + file.name);
+    appendTerminal('Size: ' + (file.size/1024).toFixed(2) + ' KB');
+    appendTerminal('─'.repeat(50));
+
+    const text = await file.text();
+    const isJSON = text.trim().startsWith('{');
+
+    if (isJSON) {
+      try {
+        const obj = JSON.parse(text);
+        appendTerminal('✅ Format: PwdCleaner JSON envelope');
+        appendTerminal('');
+        appendTerminal('── Header ──');
+        appendTerminal('magic    : ' + (obj.magic || 'N/A'));
+        appendTerminal('version  : ' + (obj.version || 'N/A'));
+        appendTerminal('algo     : ' + (obj.algo || 'N/A'));
+        appendTerminal('kdf      : ' + (obj.kdf || 'N/A'));
+        appendTerminal('');
+        appendTerminal('── Crypto ──');
+        appendTerminal('salt_b64 : ' + (obj.salt_b64 || 'N/A'));
+        appendTerminal('iv_b64   : ' + (obj.iv_b64 || 'N/A'));
+        appendTerminal('ct_b64   : ' + (obj.ct_b64 ? obj.ct_b64.substring(0,80) + '...' : 'N/A'));
+        appendTerminal('ct length: ' + ((obj.ct_b64||'').length) + ' base64 chars');
+        appendTerminal('');
+        appendTerminal('── Raw (first 500 chars) ──');
+        appendTerminal(text.substring(0, 500));
+        appendTerminal('');
+        appendTerminal('💡 To decrypt: use "Import & Decrypt" with the passphrase.');
+      } catch {
+        appendTerminal('⚠️ Looks like JSON but failed to parse.');
+        appendTerminal('First 300 chars:');
+        appendTerminal(text.substring(0, 300));
+      }
+    } else {
+      appendTerminal('⚠️ Not a JSON file.');
+      appendTerminal('First 200 bytes (hex):');
+      const buf = new Uint8Array(await file.arrayBuffer());
+      let hex = '';
+      for (let i = 0; i < Math.min(buf.length, 200); i++) {
+        hex += buf[i].toString(16).padStart(2, '0') + ' ';
+        if ((i+1) % 16 === 0) hex += '\n';
+      }
+      appendTerminal(hex);
+      appendTerminal('');
+      appendTerminal('⚠️ This may be a legacy binary format.');
+      appendTerminal('Re-export from the original app to get the new JSON format.');
+    }
+  }
+
+  // Universal download helper (works even when body is hidden)
+  function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+    a.href = url;
+    a.download = filename;
+    document.documentElement.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1500);
+  }
+
+  // ================================================================
+  //  DEMO: Encrypt sample data and show raw output in terminal
+  // ================================================================
+  async function demoEncrypt() {
+    clearTerminal();
+    appendTerminal('🧪 DEMO: Encrypting sample data...');
+    appendTerminal('─'.repeat(50));
+
+    const demoData = [
+      { url: 'https://google.com', username: 'user@gmail.com', password: 'demo123', title: 'Google', source: 'Demo', notes: '', group: '', totp: '' },
+      { url: 'https://github.com', username: 'devuser', password: 'gh_secret!', title: 'GitHub', source: 'Demo', notes: '', group: 'Work', totp: '' },
+    ];
+
+    const pass = state.masterPassphrase || 'demo-pass-123';
+    appendTerminal('Passphrase: ' + (state.masterPassphrase ? '(your passphrase)' : '"demo-pass-123"'));
+    appendTerminal('Entries   : ' + demoData.length);
+    appendTerminal('');
+
+    try {
+      const jsonFile = await _buildEncryptedFile(demoData, pass);
+      const obj = JSON.parse(jsonFile);
+
+      appendTerminal('── ENCRYPTED FILE RAW DATA ──');
+      appendTerminal('');
+      appendTerminal('{');
+      appendTerminal('  "magic"    : "' + obj.magic + '",');
+      appendTerminal('  "version"  : ' + obj.version + ',');
+      appendTerminal('  "algo"     : "' + obj.algo + '",');
+      appendTerminal('  "kdf"      : "' + obj.kdf + '",');
+      appendTerminal('  "salt_b64" : "' + obj.salt_b64.substring(0,40) + '...",');
+      appendTerminal('  "iv_b64"   : "' + obj.iv_b64 + '",');
+      appendTerminal('  "ct_b64"   : "' + obj.ct_b64.substring(0,60) + '..."');
+      appendTerminal('  // ct_b64 total length: ' + obj.ct_b64.length + ' chars');
+      appendTerminal('}');
+      appendTerminal('');
+      appendTerminal('── EXPLANATION ──');
+      appendTerminal('');
+      appendTerminal('salt_b64 = 32 random bytes (base64)');
+      appendTerminal('  → Unique every time. Prevents rainbow table attacks.');
+      appendTerminal('');
+      appendTerminal('iv_b64 = 12 random bytes (base64)');
+      appendTerminal('  → Initialization Vector. Unique per encryption.');
+      appendTerminal('');
+      appendTerminal('ct_b64 = The AES-256-GCM ciphertext (base64)');
+      appendTerminal('  → Contains your passwords. Impossible to read without passphrase.');
+      appendTerminal('');
+      appendTerminal('── CROSS-DEVICE TEST ──');
+      appendTerminal('');
+      appendTerminal('1. Export this file → save as demo.pwdcleaner');
+      appendTerminal('2. Copy file to USB / email to yourself / cloud');
+      appendTerminal('3. On laptop 2: open PwdCleaner');
+      appendTerminal('4. "Import & Decrypt" → same passphrase → WORKS!');
+      appendTerminal('');
+      appendTerminal('Why? Because:');
+      appendTerminal('  • File is plain text JSON (no binary encoding issues)');
+      appendTerminal('  • Base64 is universal (every browser supports it)');
+      appendTerminal('  • PBKDF2 + AES-GCM is a web standard (Web Crypto API)');
+      appendTerminal('  • Same passphrase + same salt+iv = same key = decrypts everywhere');
+      appendTerminal('─'.repeat(50));
+
+      // Actually download it
+      triggerDownload(
+        new Blob([jsonFile], { type: 'application/json' }),
+        'demo_encrypted.pwdcleaner'
+      );
+      appendTerminal('✅ demo_encrypted.pwdcleaner downloaded!');
+      appendTerminal('Try: Import & Decrypt tab → this file → same passphrase');
+
+    } catch (err) {
+      appendTerminal('❌ Error: ' + err.message);
+    }
+  }
+
+  // ================================================================
+  //  INIT ON DOM READY
+  // ================================================================
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

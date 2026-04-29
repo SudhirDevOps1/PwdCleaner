@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-06-01
+
+### Added
+- **Encrypted File Export/Import** — AES-256-GCM encrypted `.pwdcleaner` file format with PBKDF2 200k iterations, zero-knowledge design. Download encrypted vault, import & decrypt later on any device with passphrase.
+- **One-Click Auto Clean & Merge** — Automatically finds all exact duplicates (same website + username + password) and similar entries (same website + username), merges notes/fields, keeps best data, removes extras in one click.
+- **Auto-Clean After Export** — Toggle to automatically clear all browser data after every export, so reimporting the same file won't show old duplicates.
+- **Browser Extension** — Chrome/Chromium extension (`extension/` directory) with popup UI, dark/light theme, opens PwdCleaner in new tab. Minimal permissions (storage only), zero tracking.
+- **PRIVACY.md** — Comprehensive 15-section privacy policy document covering zero-knowledge architecture, encryption details, data rights, third-party dependencies, and more.
+- **File format versioning** — Encrypted files include magic header `PWDCLEANER`, version bytes, salt, IV, and ciphertext for future-proof format.
+
+### Fixed
+- **Duplicate function definitions** — Removed duplicate `renderAllEntries()` and `handleFiles()` definitions that caused the old basic version to override the enhanced version.
+- **escapeRegExp double-escape** — Fixed regex escape function that had incorrect double backslash escaping.
+- **Missing function implementations** — Added `autoCleanMergeAll()`, `encryptedFileExport()`, and `encryptedFileImport()` functions that were referenced by event listeners but never defined (runtime crash).
+- **Auto-clean after export** — Fixed data persistence issue where exported data stayed in browser memory.
+
 ## [1.1.0] - 2024-06-01
 
 ### Added
