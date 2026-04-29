@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Privacy-first password manager duplicate cleaner & universal format converter. Supports 40+ formats. All processing client-side.">
+  <meta name="theme-color" content="#6366f1">
+  <title>PwdCleaner – Password Manager Duplicate Cleaner & Format Converter</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="#6366f1"/>
+          <path d="M18 8C14.13 8 11 11.13 11 15v3H10a2 2 0 00-2 2v8a2 2 0 002 2h16a2 2 0 002-2v-8a2 2 0 00-2-2h-1v-3c0-3.87-3.13-7-7-7zm0 2.5c2.49 0 4.5 2.01 4.5 4.5v3h-9v-3c0-2.49 2.01-4.5 4.5-4.5zM18 22a2 2 0 110 4 2 2 0 010-4z" fill="white"/>
+        </svg>
+        <span>PwdCleaner</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-sm btn-secondary" id="installBtn" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          Install App
+        </button>
+        <button class="btn-icon" id="themeToggle" title="Toggle dark/light mode" aria-label="Toggle theme">
+          <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1>Password Duplicate Cleaner</h1>
+      <p>Privacy-first duplicate detection & universal format converter for 40+ password managers. All processing happens locally in your browser.</p>
+      <div class="badge-row">
+        <span class="badge">🔒 Zero Tracking</span>
+        <span class="badge">🌐 40+ Formats</span>
+        <span class="badge">📱 Offline-First</span>
+        <span class="badge">🔐 AES-GCM Encryption</span>
+        <span class="badge">💪 Strength Analyzer</span>
+        <span class="badge">🎲 Password Generator</span>
+      </div>
+    </section>
+
+    <!-- Tab Navigation -->
+    <nav class="tab-nav" id="tabNav">
+      <button class="tab-btn active" data-tab="workspace">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        Workspace
+      </button>
+      <button class="tab-btn" data-tab="health">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Health
+      </button>
+      <button class="tab-btn" data-tab="generator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Generator
+      </button>
+      <button class="tab-btn" data-tab="analyzer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Analyzer
+      </button>
+      <button class="tab-btn" data-tab="tools">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Tools
+      </button>
+      <button class="tab-btn" data-tab="stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Stats
+      </button>
+    </nav>
+
+    <!-- Stats -->
+    <section class="stats-bar glass-card" id="statsBar">
+      <div class="stat-item">
+        <div class="stat-value" id="statEntries">0</div>
+        <div class="stat-label">Total Entries</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statDuplicates">0</div>
+        <div class="stat-label">Duplicates Found</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statGroups">0</div>
+        <div class="stat-label">Duplicate Groups</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statFormats">0</div>
+        <div class="stat-label">Formats Detected</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statWeak">0</div>
+        <div class="stat-label">Weak Passwords</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statReused">0</div>
+        <div class="stat-label">Reused Passwords</div>
+      </div>
+    </section>
+
+    <!-- Search & Filter Bar -->
+    <section class="glass-card mb-2" id="searchSection" style="display:none;">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search & Filter Entries
+      </div>
+      <div class="controls-row">
+        <div class="control-group" style="flex:3;">
+          <label for="searchInput">Search</label>
+          <input type="text" id="searchInput" placeholder="Search by website, username, name...">
+        </div>
+        <div class="control-group">
+          <label for="filterSource">Filter by Source</label>
+          <select id="filterSource">
+            <option value="">All Sources</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="filterStrength">Filter by Strength</label>
+          <select id="filterStrength">
+            <option value="">All Strengths</option>
+            <option value="weak">Weak</option>
+            <option value="fair">Fair</option>
+            <option value="good">Good</option>
+            <option value="strong">Strong</option>
+          </select>
+        </div>
+      </div>
+      <div class="controls-row" style="margin-top:0.5rem;">
+        <button class="btn btn-secondary btn-sm" id="selectAllFilteredBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Select All Filtered
+        </button>
+        <button class="btn btn-danger btn-sm" id="deleteSelectedBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Delete Selected
+        </button>
+        <button class="btn btn-secondary btn-sm" id="autoCategorizeBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          Auto-Categorize
+        </button>
+        <span id="filterCount" style="margin-left:auto;color:var(--text-secondary);font-size:0.85rem;align-self:center;"></span>
+      </div>
+    </section>
+
+    <!-- Upload Area -->
+    <section class="glass-card mb-2">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import Passwords
+      </div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="fileInput" multiple accept=".csv,.json,.txt,.xml,.1pux">
+        <div class="upload-icon">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="6" y="6" width="36" height="36" rx="4" stroke-dasharray="4 4"/>
+            <path d="M24 16v16M16 24h16"/>
+          </svg>
+        </div>
+        <h3>Drop files here or click to browse</h3>
+        <p>Supports CSV, JSON, TXT, XML from 40+ password managers</p>
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:1rem;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-secondary btn-sm" id="loadSampleBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Load Sample Data
+        </button>
+        <button class="btn btn-secondary btn-sm" id="clearAllBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Clear All Data
+        </button>
+        <button class="btn btn-secondary btn-sm" id="undoBtn" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          Undo
+        </button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
+          <label class="toggle-wrapper" id="importModeToggle">
+            <div class="toggle">
+              <input type="checkbox" id="importModeCheckbox">
+              <span class="toggle-slider"></span>
+            </div>
+            <span class="toggle-label" style="font-size:0.8rem;">Replace Mode</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="glass-card mb-2">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Detection & Export Controls
+      </div>
+      <div class="controls-row">
+        <div class="control-group">
+          <label for="duplicateRule">Duplicate Detection Rule</label>
+          <select id="duplicateRule">
+            <option value="exact">Exact Match (website + username + password)</option>
+            <option value="websiteUsername">Website + Username</option>
+            <option value="website">Website Only</option>
+            <option value="fuzzy">Fuzzy Domain Match</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="exportFormat">Export Format</label>
+          <select id="exportFormat">
+            <option value="bitwarden-csv">Bitwarden (CSV)</option>
+            <option value="bitwarden-json">Bitwarden (JSON)</option>
+            <option value="chrome-csv">Chrome / Brave / Edge (CSV)</option>
+            <option value="firefox-csv">Firefox (CSV)</option>
+            <option value="lastpass-csv">LastPass (CSV)</option>
+            <option value="1password-csv">1Password (CSV)</option>
+            <option value="dashlane-csv">Dashlane (CSV)</option>
+            <option value="keeper-csv">Keeper (CSV)</option>
+            <option value="nordpass-csv">NordPass (CSV)</option>
+            <option value="roboform-csv">RoboForm (CSV)</option>
+            <option value="keepass-csv">KeePass (CSV)</option>
+            <option value="enpass-csv">Enpass (CSV)</option>
+            <option value="protonpass-json">Proton Pass (JSON)</option>
+            <option value="zoho-csv">Zoho Vault (CSV)</option>
+            <option value="generic-csv">Generic CSV</option>
+            <option value="generic-json">Generic JSON</option>
+          </select>
+        </div>
+      </div>
+      <div class="controls-row">
+        <button class="btn btn-primary" id="findDuplicatesBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Find Duplicates
+        </button>
+        <button class="btn btn-success" id="exportBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Cleaned Data
+        </button>
+      </div>
+
+      <!-- Encryption Toggle -->
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <label class="toggle-wrapper" id="encryptionToggle">
+          <div class="toggle">
+            <input type="checkbox" id="encryptionCheckbox">
+            <span class="toggle-slider"></span>
+          </div>
+          <span class="toggle-label">🔐 Enable Client-Side Encryption (AES-GCM)</span>
+        </label>
+        <div class="encryption-panel" id="encryptionPanel">
+          <div class="controls-row" style="margin-top:0.75rem;">
+            <div class="control-group">
+              <label for="masterPass">Master Passphrase</label>
+              <input type="password" id="masterPass" placeholder="Enter a strong passphrase...">
+            </div>
+            <button class="btn btn-primary btn-sm" id="encryptSaveBtn" style="align-self:flex-end;">Encrypt & Save</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Progress -->
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">Processing...</div>
+    </div>
+
+    <!-- Duplicate Results -->
+    <section class="glass-card mb-2" id="resultsSection" style="display:none;">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Duplicate Groups
+        <button class="btn btn-danger btn-sm" id="deleteMarkedBtn" style="margin-left:auto;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Delete Marked
+        </button>
+      </div>
+      <div id="duplicateGroups"></div>
+    </section>
+
+    <!-- All Entries View -->
+    <section class="glass-card mb-2" id="entriesSection" style="display:none;">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        All Imported Entries
+      </div>
+      <div id="allEntries"></div>
+    </section>
+
+    <!-- ===== HEALTH TAB ===== -->
+    <section class="glass-card mb-2 tab-panel" id="healthPanel" style="display:none;">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Password Health Dashboard
+      </div>
+      <div class="health-grid">
+        <div class="health-card glass-card" id="healthScoreCard">
+          <div class="health-ring" id="healthRing">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="8"/>
+              <circle cx="60" cy="60" r="52" fill="none" stroke="var(--accent)" stroke-width="8"
+                stroke-dasharray="327" stroke-dashoffset="327" stroke-linecap="round" transform="rotate(-90 60 60)"
+                id="healthCircle"/>
+            </svg>
+            <div class="health-score-text" id="healthScoreText">0</div>
+          </div>
+          <div class="health-label">Overall Health Score</div>
+        </div>
+        <div class="health-card glass-card">
+          <div class="health-icon" style="color:var(--danger);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div class="health-value" id="healthWeak">0</div>
+          <div class="health-label">Weak Passwords</div>
+          <div class="health-detail">Score &lt; 30</div>
+        </div>
+        <div class="health-card glass-card">
+          <div class="health-icon" style="color:var(--warning);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <div class="health-value" id="healthReused">0</div>
+          <div class="health-label">Reused Passwords</div>
+          <div class="health-detail">Same password on multiple sites</div>
+        </div>
+        <div class="health-card glass-card">
+          <div class="health-icon" style="color:var(--success);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="health-value" id="healthStrong">0</div>
+          <div class="health-label">Strong Passwords</div>
+          <div class="health-detail">Score &ge; 70</div>
+        </div>
+        <div class="health-card glass-card">
+          <div class="health-icon" style="color:var(--accent);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <div class="health-value" id="healthNoTotp">0</div>
+          <div class="health-label">No 2FA/TOTP</div>
+          <div class="health-detail">Missing two-factor auth</div>
+        </div>
+        <div class="health-card glass-card">
+          <div class="health-icon" style="color:#8b5cf6;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="health-value" id="healthShortPw">0</div>
+          <div class="health-label">Short Passwords</div>
+          <div class="health-detail">Length &lt; 8 characters</div>
+        </div>
+      </div>
+      <button class="btn btn-primary mt-2" id="analyzeHealthBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Run Health Analysis
+      </button>
+      <div id="healthDetails" class="mt-2" style="display:none;"></div>
+    </section>
+
+    <!-- ===== GENERATOR TAB ===== -->
+    <section class="glass-card mb-2 tab-panel" id="generatorPanel" style="display:none;">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Password Generator
+      </div>
+      <div class="generator-output">
+        <input type="text" id="generatedPassword" readonly placeholder="Click Generate..." class="gen-output">
+        <div class="gen-actions">
+          <button class="btn btn-icon" id="copyGenBtn" title="Copy to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+          <button class="btn btn-icon" id="regenBtn" title="Regenerate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="gen-strength-bar">
+        <div class="gen-strength-fill" id="genStrengthFill"></div>
+        <span class="gen-strength-label" id="genStrengthLabel">—</span>
+      </div>
+      <div class="controls-row mt-2">
+        <div class="control-group">
+          <label for="genLength">Length: <span id="genLengthVal">20</span></label>
+          <input type="range" id="genLength" min="8" max="128" value="20" style="width:100%;accent-color:var(--accent);">
+        </div>
+      </div>
+      <div class="gen-options">
+        <label class="toggle-wrapper">
+          <div class="toggle">
+            <input type="checkbox" id="genUpper" checked>
+            <span class="toggle-slider"></span>
+          </div>
+          <span class="toggle-label">Uppercase (A-Z)</span>
+        </label>
+        <label class="toggle-wrapper">
+          <div class="toggle">
+            <input type="checkbox" id="genLower" checked>
+            <span class="toggle-slider"></span>
+          </div>
+          <span class="toggle-label">Lowercase (a-z)</span>
+        </label>
+        <label class="toggle-wrapper">
+          <div class="toggle">
+            <input type="checkbox" id="genDigits" checked>
+            <span class="toggle-slider"></span>
+          </div>
+          <span class="toggle-label">Digits (0-9)</span>
+        </label>
+        <label class="toggle-wrapper">
+          <div class="toggle">
+            <input type="checkbox" id="genSymbols" checked>
+            <span class="toggle-slider"></span>
+          </div>
+          <span class="toggle-label">Symbols (!@#$...)</span>
+        </label>
+        <label class="toggle-wrapper">
+          <div class="toggle">
+            <input type="checkbox" id="genAmbiguous">
+            <span class="toggle-slider"></span>
+          </div>
+          <span class="toggle-label">Exclude Ambiguous (0O1lI)</span>
+        </label>
+      </div>
+      <div class="controls-row mt-2">
+        <div class="control-group">
+          <label for="genExcludeChars">Exclude Characters</label>
+          <input type="text" id="genExcludeChars" placeholder="e.g. {}[]()">
+        </div>
+        <div class="control-group">
+          <label for="genCount">Generate Count</label>
+          <input type="text" id="genCount" value="1" placeholder="1-50">
+        </div>
+      </div>
+      <button class="btn btn-primary mt-2" id="generateBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Generate Password(s)
+      </button>
+      <div id="genHistory" class="mt-2"></div>
+    </section>
+
+    <!-- ===== ANALYZER TAB ===== -->
+    <section class="glass-card mb-2 tab-panel" id="analyzerPanel" style="display:none;">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Password Strength Analyzer
+      </div>
+      <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem;">Analyze the strength of a password without storing it. 100% local — nothing is sent anywhere.</p>
+      <div class="controls-row">
+        <div class="control-group" style="flex:3;">
+          <label for="analyzeInput">Password to Analyze</label>
+          <input type="password" id="analyzeInput" placeholder="Type or paste a password...">
+        </div>
+        <button class="btn btn-secondary" id="analyzeToggleVis" style="align-self:flex-end;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="analyzer-result mt-2" id="analyzerResult" style="display:none;">
+        <div class="analyzer-score-row">
+          <div class="analyzer-score-ring" id="analyzerRing">
+            <span id="analyzerScore">0</span>
+          </div>
+          <div class="analyzer-score-info">
+            <div class="analyzer-rating" id="analyzerRating">—</div>
+            <div class="analyzer-crack-time" id="analyzerCrackTime">—</div>
+          </div>
+        </div>
+        <div class="analyzer-checks" id="analyzerChecks"></div>
+        <div class="analyzer-suggestions mt-1" id="analyzerSuggestions"></div>
+      </div>
+      <button class="btn btn-primary mt-2" id="analyzeBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Analyze Strength
+      </button>
+    </section>
+
+    <!-- ===== TOOLS TAB ===== -->
+    <section class="glass-card mb-2 tab-panel" id="toolsPanel" style="display:none;">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Advanced Tools
+      </div>
+
+      <!-- Backup / Restore -->
+      <div class="tool-section">
+        <h4>Backup & Restore</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Create encrypted backup of all data or restore from a backup file.</p>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" id="backupBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Download Backup (.json)
+          </button>
+          <button class="btn btn-secondary btn-sm" id="restoreBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Restore from Backup
+          </button>
+          <input type="file" id="restoreFileInput" accept=".json" style="display:none;">
+        </div>
+      </div>
+
+      <!-- Merge Duplicates -->
+      <div class="tool-section">
+        <h4>Smart Merge Entries</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Automatically merge entries that share the same website and username, combining notes and keeping the best data.</p>
+        <button class="btn btn-secondary btn-sm" id="smartMergeBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          Smart Merge Duplicates
+        </button>
+      </div>
+
+      <!-- Remove Empty -->
+      <div class="tool-section">
+        <h4>Clean Empty Entries</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Remove entries that have no password, no username, or are completely empty.</p>
+        <button class="btn btn-secondary btn-sm" id="removeEmptyBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          Remove Empty Entries
+        </button>
+      </div>
+
+      <!-- Normalize URLs -->
+      <div class="tool-section">
+        <h4>Normalize URLs</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Standardize all URLs — remove trailing slashes, www prefix, and ensure consistent format.</p>
+        <button class="btn btn-secondary btn-sm" id="normalizeUrlsBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          Normalize All URLs
+        </button>
+      </div>
+
+      <!-- Export Selected -->
+      <div class="tool-section">
+        <h4>Export Selected Entries</h4>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:0.75rem;">Export only the entries you've selected in the search/filter section above.</p>
+        <button class="btn btn-secondary btn-sm" id="exportSelectedBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Selected
+        </button>
+      </div>
+
+      <!-- Keyboard Shortcuts -->
+      <div class="tool-section">
+        <h4>Keyboard Shortcuts</h4>
+        <div class="shortcuts-grid">
+          <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>I</kbd> <span>Import file</span></div>
+          <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>F</kbd> <span>Search entries</span></div>
+          <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>D</kbd> <span>Find duplicates</span></div>
+          <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>E</kbd> <span>Export data</span></div>
+          <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>G</kbd> <span>Generate password</span></div>
+          <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>Z</kbd> <span>Undo last action</span></div>
+          <div class="shortcut-item"><kbd>Ctrl</kbd>+<kbd>L</kbd> <span>Load sample data</span></div>
+          <div class="shortcut-item"><kbd>Esc</kbd> <span>Close modal / Clear search</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== STATS TAB ===== -->
+    <section class="glass-card mb-2 tab-panel" id="statsPanel" style="display:none;">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Detailed Statistics
+      </div>
+      <div class="stats-detail-grid">
+        <div class="glass-card stat-detail-card">
+          <h4>Source Distribution</h4>
+          <div id="sourceDistribution"></div>
+        </div>
+        <div class="glass-card stat-detail-card">
+          <h4>Password Length Distribution</h4>
+          <div id="lengthDistribution"></div>
+        </div>
+        <div class="glass-card stat-detail-card">
+          <h4>Strength Overview</h4>
+          <div id="strengthOverview"></div>
+        </div>
+        <div class="glass-card stat-detail-card">
+          <h4>Top Domains</h4>
+          <div id="topDomains"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary mt-2" id="refreshStatsBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        Refresh Statistics
+      </button>
+    </section>
+
+    <!-- ===== EDIT ENTRY MODAL ===== -->
+    <div class="modal-overlay" id="editModal">
+      <div class="modal">
+        <h2>Edit Entry</h2>
+        <input type="hidden" id="editIndex">
+        <div class="form-group">
+          <label for="editName">Name</label>
+          <input type="text" id="editName" placeholder="Entry name">
+        </div>
+        <div class="form-group">
+          <label for="editUrl">URL / Website</label>
+          <input type="text" id="editUrl" placeholder="https://example.com">
+        </div>
+        <div class="form-group">
+          <label for="editUsername">Username</label>
+          <input type="text" id="editUsername" placeholder="user@example.com">
+        </div>
+        <div class="form-group">
+          <label for="editPassword">Password</label>
+          <input type="text" id="editPassword" placeholder="Password">
+        </div>
+        <div class="form-group">
+          <label for="editNotes">Notes</label>
+          <input type="text" id="editNotes" placeholder="Optional notes">
+        </div>
+        <div class="form-group">
+          <label for="editGroup">Group / Folder</label>
+          <input type="text" id="editGroup" placeholder="e.g. Work, Social">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="editCancelBtn">Cancel</button>
+          <button class="btn btn-danger" id="editDeleteBtn">Delete Entry</button>
+          <button class="btn btn-primary" id="editSaveBtn">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>Developer Contact</h4>
+          <a href="mailto:developer@example.com">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            developer@example.com
+          </a>
+          <a href="https://linkedin.com/in/developer" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+            LinkedIn
+          </a>
+          <a href="https://twitter.com/developer" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
+            Twitter / X
+          </a>
+          <a href="https://privmitlab.github.io" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            Website
+          </a>
+        </div>
+        <div class="footer-section">
+          <h4>Share This App</h4>
+          <div class="share-buttons">
+            <button class="share-btn whatsapp" id="shareWhatsApp" title="Share on WhatsApp">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.49l4.597-1.205A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-2.08 0-4.016-.639-5.61-1.733l-.403-.267-2.732.716.73-2.667-.28-.447A9.78 9.78 0 012.18 12c0-5.422 4.398-9.82 9.82-9.82 5.422 0 9.82 4.398 9.82 9.82 0 5.422-4.398 9.82-9.82 9.82z"/></svg>
+              WhatsApp
+            </button>
+            <button class="share-btn twitter" id="shareTwitter" title="Share on Twitter">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
+              Twitter
+            </button>
+            <button class="share-btn linkedin" id="shareLinkedIn" title="Share on LinkedIn">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-7a6 6 0 016-6zM2 9h4v12H2zM4 2a2 2 0 110 4 2 2 0 010-4z"/></svg>
+              LinkedIn
+            </button>
+            <button class="share-btn share-more" id="shareMore" title="Share via system">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              Share
+            </button>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <a href="privacy.html">Privacy Policy</a>
+          <a href="CONTRIBUTING.md">Contributing</a>
+          <a href="CHANGELOG.md">Changelog</a>
+          <a href="README.md">Documentation</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>Built with ❤️ by PrivMITLab – 100% Client-Side – Zero Tracking – Open Source</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
