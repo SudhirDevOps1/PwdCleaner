@@ -596,166 +596,97 @@
   }
 
   function detectCSVFormat(headers, filename) {
-    const h = headers.join(',').toLowerCase();
+    const hStr = headers.join(',').toLowerCase();
+    const fname = filename.toLowerCase();
 
-    if (h.includes('login_uri') || h.includes('login_username')) return 'bitwarden-csv';
-    if (h.includes('folder') && h.includes('favorite') && h.includes('type')) return 'bitwarden-csv';
-    if (h.includes('hostname') && h.includes('httprealm')) return 'firefox-csv';
-    if (h.includes('formsubmiturl')) return 'firefox-csv';
-    if (h.includes('totp') && h.includes('extra') && h.includes('grouping')) return 'lastpass-csv';
-    if (h.includes('username2') || h.includes('username3')) return 'dashlane-csv';
-    if (h.includes('reprompt')) return 'bitwarden-csv';
-    if (h.includes('matchurl')) return 'roboform-csv';
-    if (h.includes('account name') && h.includes('folder name')) return 'zoho-csv';
-    if (h.includes('custom fields')) return 'keeper-csv';
-    if (h.includes('folder') && h.includes('title') && h.includes('username') && !h.includes('type')) return 'keepass-csv';
-    if (filename.includes('1password') || filename.includes('1pu')) return '1password-csv';
-    if (filename.includes('lastpass')) return 'lastpass-csv';
-    if (filename.includes('bitwarden')) return 'bitwarden-csv';
-    if (filename.includes('dashlane')) return 'dashlane-csv';
-    if (filename.includes('keeper')) return 'keeper-csv';
-    if (filename.includes('nordpass')) return 'nordpass-csv';
-    if (filename.includes('roboform')) return 'roboform-csv';
-    if (filename.includes('keepass')) return 'keepass-csv';
-    if (filename.includes('enpass')) return 'enpass-csv';
-    if (filename.includes('proton')) return 'protonpass-json';
-    if (filename.includes('sticky')) return 'sticky-csv';
-    if (filename.includes('remembear')) return 'remembear-csv';
-    if (filename.includes('myki')) return 'myki-csv';
-    if (filename.includes('strongbox')) return 'strongbox-csv';
-    if (filename.includes('keychain')) return 'keychain-csv';
-    if (filename.includes('samsung')) return 'samsung-csv';
-    if (filename.includes('chrome') || filename.includes('google')) return 'chrome-csv';
-    if (filename.includes('firefox') || filename.includes('mozilla')) return 'firefox-csv';
-    if (filename.includes('safari')) return 'safari-csv';
-    if (filename.includes('opera')) return 'opera-csv';
-    if (filename.includes('vivaldi')) return 'vivaldi-csv';
+    // High-confidence specific matches
+    if (hStr.includes('login_uri') && hStr.includes('login_username')) return 'bitwarden-csv';
+    if (hStr.includes('hostname') && hStr.includes('httprealm')) return 'firefox-csv';
+    if (hStr.includes('username2') && hStr.includes('username3')) return 'dashlane-csv';
+    if (hStr.includes('matchurl') && hStr.includes('pwd')) return 'roboform-csv';
+    if (hStr.includes('otpauth') && hStr.includes('title')) return 'safari-csv';
+    if (hStr.includes('custom fields') && hStr.includes('web_address')) return 'keeper-csv';
+    if (hStr.includes('folder name') && hStr.includes('account name')) return 'zoho-csv';
+    
+    // Pattern-based detection
+    for (const [id, meta] of Object.entries(FORMATS)) {
+      if (!meta.headers || meta.headers.length === 0) continue;
+      const matchCount = meta.headers.filter(required => 
+        headers.some(h => h === required.toLowerCase() || h.includes(required.toLowerCase()))
+      ).length;
+      
+      // If 70% of headers match, it's likely this format
+      if (matchCount / meta.headers.length >= 0.7) return id;
+    }
 
-    // Try to detect by header patterns
-    if (h.includes('url') && h.includes('username') && h.includes('password')) return 'chrome-csv';
-    if (h.includes('website') && h.includes('password')) return 'generic-csv';
-    if (h.includes('hostname') && h.includes('password')) return 'generic-csv';
-
+    // Filename fallbacks
+    if (fname.includes('bitwarden')) return 'bitwarden-csv';
+    if (fname.includes('1password')) return '1password-csv';
+    if (fname.includes('chrome') || fname.includes('google')) return 'chrome-csv';
+    if (fname.includes('lastpass')) return 'lastpass-csv';
+    if (fname.includes('nordpass')) return 'nordpass-csv';
+    
     return 'generic-csv';
   }
 
   function mapCSVEntry(headers, row, format, filename) {
-    const get = (fieldNames) => {
-      for (const fn of fieldNames) {
-        const idx = headers.findIndex(h => h.includes(fn.toLowerCase()));
+    const get = (keywords) => {
+      // Priority 1: Exact match
+      for (const kw of keywords) {
+        const idx = headers.findIndex(h => h === kw.toLowerCase());
+        if (idx !== -1 && row[idx] !== undefined) return row[idx].trim();
+      }
+      // Priority 2: Partial match
+      for (const kw of keywords) {
+        const idx = headers.findIndex(h => h.includes(kw.toLowerCase()));
         if (idx !== -1 && row[idx] !== undefined) return row[idx].trim();
       }
       return '';
     };
 
     const entry = {
-      source: format,
-      name: '',
-      url: '',
-      username: '',
-      password: '',
-      notes: '',
-      group: '',
-      totp: ''
+      source: FORMATS[format]?.name || 'Generic',
+      name: '', url: '', username: '', password: '', notes: '', group: '', totp: ''
     };
 
-    switch (format) {
-      case 'bitwarden-csv':
-        entry.name = get(['name']);
-        entry.url = get(['login_uri', 'url', 'uri']);
-        entry.username = get(['login_username', 'username']);
-        entry.password = get(['login_password', 'password']);
-        entry.notes = get(['notes']);
-        entry.totp = get(['login_totp', 'totp']);
-        entry.group = get(['folder']);
-        break;
-      case 'firefox-csv':
-        entry.url = get(['hostname']);
-        entry.username = get(['username']);
-        entry.password = get(['password']);
-        break;
-      case 'lastpass-csv':
-        entry.name = get(['name']);
-        entry.url = get(['url']);
-        entry.username = get(['username']);
-        entry.password = get(['password']);
-        entry.group = get(['grouping']);
-        entry.totp = get(['totp']);
-        entry.notes = get(['extra']);
-        break;
-      case '1password-csv':
-        entry.name = get(['title', 'name']);
-        entry.url = get(['url', 'website']);
-        entry.username = get(['username', 'login']);
-        entry.password = get(['password', 'pwd']);
-        entry.notes = get(['notes']);
-        break;
-      case 'dashlane-csv':
-        entry.name = get(['name', 'title']);
-        entry.url = get(['website', 'url']);
-        entry.username = get(['username']);
-        entry.password = get(['password']);
-        entry.group = get(['category']);
-        entry.notes = get(['note']);
-        break;
-      case 'keeper-csv':
-        entry.name = get(['title', 'name']);
-        entry.url = get(['web_address', 'url', 'website']);
-        entry.username = get(['login', 'username']);
-        entry.password = get(['password', 'pwd']);
-        entry.notes = get(['notes', 'comment']);
-        entry.group = get(['folder']);
-        break;
-      case 'nordpass-csv':
-        entry.name = get(['name', 'title']);
-        entry.url = get(['url', 'website']);
-        entry.username = get(['username', 'login']);
-        entry.password = get(['password']);
-        entry.notes = get(['note', 'notes']);
-        break;
-      case 'roboform-csv':
-        entry.name = get(['name', 'title']);
-        entry.url = get(['url', 'website']);
-        entry.username = get(['login', 'username']);
-        entry.password = get(['pwd', 'password']);
-        entry.notes = get(['note', 'notes']);
-        break;
-      case 'keepass-csv':
-        entry.name = get(['title', 'name']);
-        entry.url = get(['url', 'website']);
-        entry.username = get(['username', 'login']);
-        entry.password = get(['password', 'pwd']);
-        entry.notes = get(['notes', 'comment']);
-        entry.group = get(['group']);
-        break;
-      case 'enpass-csv':
-        entry.name = get(['title', 'name']);
-        entry.url = get(['url', 'website']);
-        entry.username = get(['username', 'login']);
-        entry.password = get(['password']);
-        entry.notes = get(['note', 'notes']);
-        break;
-      case 'zoho-csv':
-        entry.name = get(['account name', 'name', 'title']);
-        entry.url = get(['website url', 'url', 'website']);
-        entry.username = get(['user name', 'username']);
-        entry.password = get(['password']);
-        entry.group = get(['folder name', 'folder']);
-        entry.notes = get(['notes']);
-        break;
-      default:
-        // Generic mapping - try common field names
-        entry.name = get(['name', 'title', 'label', 'account name', 'entry']);
-        entry.url = get(['url', 'website', 'uri', 'hostname', 'web_address', 'site', 'domain', 'login_uri', 'website url']);
-        entry.username = get(['username', 'user', 'login', 'email', 'user name', 'login_username', 'account']);
-        entry.password = get(['password', 'pass', 'pwd', 'login_password', 'secret']);
-        entry.notes = get(['notes', 'note', 'comment', 'extra', 'description']);
-        entry.group = get(['group', 'folder', 'category', 'grouping', 'folder name', 'type']);
-        entry.totp = get(['totp', 'otp', 'login_totp', '2fa']);
-        break;
-    }
+    // Mapping definitions for all major formats
+    const map = {
+      'chrome-csv': { name: ['name'], url: ['url'], user: ['username'], pass: ['password'] },
+      'bitwarden-csv': { name: ['name'], url: ['login_uri'], user: ['login_username'], pass: ['login_password'], totp: ['login_totp'], note: ['notes'], grp: ['folder'] },
+      '1password-csv': { name: ['title'], url: ['url', 'website'], user: ['username'], pass: ['password'], note: ['notes'] },
+      'lastpass-csv': { name: ['name'], url: ['url'], user: ['username'], pass: ['password'], totp: ['totp'], note: ['extra'], grp: ['grouping'] },
+      'safari-csv': { name: ['title'], url: ['url'], user: ['username'], pass: ['password'], note: ['notes'], totp: ['otpauth'] },
+      'firefox-csv': { url: ['hostname'], user: ['username'], pass: ['password'] },
+      'dashlane-csv': { name: ['name'], url: ['website'], user: ['username'], pass: ['password'], note: ['note'], grp: ['category'] },
+      'keeper-csv': { name: ['title'], url: ['web_address'], user: ['login'], pass: ['password'], note: ['notes'], grp: ['folder'] },
+      'nordpass-csv': { name: ['name'], url: ['url'], user: ['username'], pass: ['password'], note: ['note'] },
+      'roboform-csv': { name: ['name'], url: ['url'], user: ['login'], pass: ['pwd'], note: ['note'] },
+      'keepass-csv': { name: ['title'], url: ['url'], user: ['username'], pass: ['password'], note: ['notes'], grp: ['group'] },
+      'enpass-csv': { name: ['title'], url: ['url'], user: ['username'], pass: ['password'], note: ['note'] },
+      'zoho-csv': { name: ['account name'], url: ['website url'], user: ['user name'], pass: ['password'], grp: ['folder name'], note: ['notes'] }
+    };
 
-    entry.source = FORMATS[format]?.name || format;
+    const fields = map[format] || {
+      name: ['name', 'title', 'label', 'account', 'entry'],
+      url: ['url', 'website', 'uri', 'hostname', 'site', 'link', 'web'],
+      user: ['username', 'user', 'login', 'email', 'id', 'account'],
+      pass: ['password', 'pass', 'pwd', 'secret'],
+      note: ['notes', 'note', 'comment', 'description', 'extra'],
+      grp: ['group', 'folder', 'category', 'collection'],
+      totp: ['totp', 'otp', '2fa', 'code']
+    };
+
+    entry.name = get(fields.name || []);
+    entry.url = get(fields.url || []);
+    entry.username = get(fields.user || []);
+    entry.password = get(fields.pass || []);
+    entry.notes = get(fields.note || []);
+    entry.group = get(fields.grp || []);
+    entry.totp = get(fields.totp || []);
+
+    // Fallback: if name is empty, use domain
+    if (!entry.name && entry.url) entry.name = getDomain(entry.url);
+
     return entry;
   }
 
@@ -994,13 +925,15 @@
           for (const vault of account.vaults || []) {
             for (const item of vault.items || []) {
               const fields = item.details ? item.details.loginFields || [] : [];
+              const ov = item.overview || {};
+              const itemUrl = ov.url || (ov.urls && ov.urls.length > 0 ? ov.urls[0] : '');
               entries.push({
                 source: '1Password (1PUX)',
-                name: item.overview ? item.overview.title : '',
-                url: item.overview ? (item.overview.url || item.overview.urls ? item.overview.urls[0] : '') : '',
+                name: ov.title || '',
+                url: itemUrl,
                 username: (fields.find(f => f.designation === 'username') || {}).value || '',
                 password: (fields.find(f => f.designation === 'password') || {}).value || '',
-                notes: item.details ? item.details.notesPlain : '',
+                notes: item.details ? (item.details.notesPlain || '') : '',
                 group: vault.name || '',
                 totp: ''
               });
@@ -1250,6 +1183,7 @@
       return;
     }
 
+    saveUndoState();
     const indicesToDelete = new Set();
     let deleteCount = 0;
 
@@ -1415,7 +1349,20 @@
     const headers = 'folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp';
     const rows = state.entries.map(e => {
       const name = e.name || getDomain(e.url) || 'Untitled';
-      return [e.group || '', '0', '1', name, e.notes || '', '', '0', e.url || '', e.username || '', e.password || '', e.totp || ''].map(csvEscape).join(',');
+      const row = [
+        e.group || '',          // folder
+        '0',                    // favorite
+        '1',                    // type (1 = login)
+        name,                   // name
+        e.notes || '',          // notes
+        '',                     // fields
+        '0',                    // reprompt
+        e.url || '',            // login_uri
+        e.username || '',       // login_username
+        e.password || '',       // login_password
+        e.totp || ''            // login_totp
+      ];
+      return row.map(csvEscape).join(',');
     });
     return [headers, ...rows].join('\n');
   }
@@ -1552,9 +1499,9 @@
   }
 
   function exportGenericCSV() {
-    const headers = 'name,url,username,email,password,notes,group,totp,source';
+    const headers = 'name,url,username,password,notes,group,totp,source';
     const rows = state.entries.map(e =>
-      [e.name || getDomain(e.url) || 'Untitled', e.url || '', e.username || '', e.username || '', e.password || '', e.notes || '', e.group || '', e.totp || '', e.source || ''].map(csvEscape).join(',')
+      [e.name || getDomain(e.url) || 'Untitled', e.url || '', e.username || '', e.password || '', e.notes || '', e.group || '', e.totp || '', e.source || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1983,16 +1930,8 @@
     };
   }
 
-  function getDomain(url) {
-    try {
-      let u = (url || '').trim();
-      if (!u) return '';
-      if (!u.includes('://')) u = 'https://' + u;
-      return new URL(u).hostname.replace(/^www\./, '');
-    } catch {
-      return (url || '').toLowerCase().replace(/^www\./, '');
-    }
-  }
+  // getDomain is defined in shared utilities at the top of this file (line ~96)
+  // Do not re-declare it here to avoid shadowing.
 
   // ===== PASSWORD STRENGTH SCORING =====
   function scorePassword(pw) {
@@ -2203,7 +2142,7 @@
       if (row) row.classList.add('highlight');
     });
     updateBatchToolbar();
-    showToast(`Selected ${visibleCheckboxes.size} entries`, 'info');
+    showToast(`Selected ${visibleCheckboxes.length} entries`, 'info');
   }
 
   function deleteSelectedEntries() {
