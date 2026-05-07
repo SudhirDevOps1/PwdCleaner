@@ -84,7 +84,9 @@
 
   function getNormalizedUrl(url) {
     if (!url) return '';
-    return url.toLowerCase()
+    // Handle multiple URLs (take the first one)
+    let firstUrl = url.split(',')[0].split(';')[0].trim();
+    return firstUrl.toLowerCase()
       .replace(/^https?:\/\//, '')
       .replace(/^www\./, '')
       .replace(/\/+$/, '')
@@ -3029,47 +3031,49 @@
       return;
     }
 
+    const beforeCount = state.entries.length;
     saveUndoState();
-    showProgress('Scanning for exact duplicates...', 20);
+    showProgress('Aggressive Cleanup in progress...', 20);
 
-    const before = state.entries.length;
-    const seen = new Map();
-    const keepers = [];
-    let dupesRemoved = 0;
+    // Pass 1: Deduplicate by Website + Username + Password (Exact)
+    // We use a Map to keep the "best" entry (one with notes or more fields)
+    const exactMap = new Map();
+    let exactRemoved = 0;
 
-    for (const entry of state.entries) {
-      const normUrl = getNormalizedUrl(entry.url);
-      const normUser = normalize(entry.username);
-      const normPass = normalize(entry.password);
-      const key       = `${normUrl}||${normUser}||${normPass}`;
+    state.entries.forEach(entry => {
+      const u = getNormalizedUrl(entry.url);
+      const user = normalize(entry.username);
+      const pass = (entry.password || '').trim(); // Keep password case-sensitive but trim
+      const key = `${u}||${user}||${pass}`;
 
-      if (seen.has(key)) {
-        // Merge: keep best data from both
-        const existing = seen.get(key);
-        if ((entry.notes || '').length > (existing.notes || '').length) existing.notes = entry.notes;
-        if ((entry.name || '').length > (existing.name || '').length)   existing.name  = entry.name;
-        if ((entry.group || '') && !existing.group) existing.group = entry.group;
-        if ((entry.totp || '') && !existing.totp)    existing.totp  = entry.totp;
-        dupesRemoved++;
+      if (exactMap.has(key)) {
+        const existing = exactMap.get(key);
+        // Merge minor fields if existing is missing them
+        if (!existing.notes && entry.notes) existing.notes = entry.notes;
+        if (!existing.name && entry.name) existing.name = entry.name;
+        if (!existing.totp && entry.totp) existing.totp = entry.totp;
+        if (!existing.group && entry.group) existing.group = entry.group;
+        exactRemoved++;
       } else {
-        seen.set(key, entry);
-        keepers.push(entry);
+        exactMap.set(key, { ...entry });
       }
-    }
+    });
 
-    // Also merge website+username matches (combine notes, keep longest password)
-    showProgress('Merging similar entries...', 60);
-    const merged = new Map();
+    const keepers = Array.from(exactMap.values());
+    showProgress('Merging similar accounts...', 60);
+
+    // Pass 2: Merge accounts with same Website + Username (keep longest password)
+    const similarMap = new Map();
     let similarMerged = 0;
 
-    for (const entry of keepers) {
-      const normUrl  = getNormalizedUrl(entry.url);
-      const normUser = normalize(entry.username);
-      const key      = `${normUrl}||${normUser}`;
+    keepers.forEach(entry => {
+      const u = getNormalizedUrl(entry.url);
+      const user = normalize(entry.username);
+      const key = `${u}||${user}`;
 
-      if (merged.has(key)) {
-        const existing = merged.get(key);
-        // Keep longer password
+      if (similarMap.has(key)) {
+        const existing = similarMap.get(key);
+        // Keep better password
         if ((entry.password || '').length > (existing.password || '').length) {
           existing.password = entry.password;
         }
@@ -3077,31 +3081,30 @@
         if (entry.notes && !existing.notes.includes(entry.notes)) {
           existing.notes = (existing.notes ? existing.notes + ' | ' : '') + entry.notes;
         }
-        // Keep best name
+        // Keep better name
         if ((entry.name || '').length > (existing.name || '').length) existing.name = entry.name;
-        if ((entry.totp || '') && !existing.totp) existing.totp = entry.totp;
-        if ((entry.group || '') && !existing.group) existing.group = entry.group;
         similarMerged++;
       } else {
-        merged.set(key, { ...entry });
+        similarMap.set(key, { ...entry });
       }
-    }
+    });
 
-    state.entries = Array.from(merged.values());
-    const totalRemoved = dupesRemoved + similarMerged;
-
+    state.entries = Array.from(similarMap.values());
+    state.duplicateGroups = []; // CLEAR duplicate groups UI state
+    
     showProgress('Finalizing...', 90);
-    state.duplicateGroups = [];
     updateStats();
     saveToStorage();
     renderAllEntries();
+    renderDuplicateGroups(); // This will now show "No Duplicates Found"
     hideProgress();
 
     const resultEl = $('#autoCleanResult');
+    const totalRemoved = exactRemoved + similarMerged;
     if (resultEl) {
-      resultEl.innerHTML = `<strong style="color:#22c55e;">✓ ${totalRemoved} duplicates removed!</strong> (${before} → ${state.entries.length} entries)`;
+      resultEl.innerHTML = `<strong style="color:#22c55e;">✓ ${totalRemoved} duplicates eliminated!</strong>`;
     }
-    showToast(`Auto-cleaned: ${dupesRemoved} exact dupes removed, ${similarMerged} similar entries merged. ${before} → ${state.entries.length}`, 'success');
+    showToast(`Success: ${totalRemoved} duplicates removed. Workspace is now clean.`, 'success');
   }
 
   // ================================================================
