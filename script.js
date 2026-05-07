@@ -79,6 +79,29 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
 
+  // Shared Utilities
+  const normalize = (str) => (str || '').toLowerCase().trim();
+
+  function getNormalizedUrl(url) {
+    if (!url) return '';
+    return url.toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/+$/, '')
+      .trim();
+  }
+
+  function getDomain(url) {
+    try {
+      if (!url) return '';
+      let u = url.trim();
+      if (!u.includes('://')) u = 'https://' + u;
+      return new URL(u).hostname.replace(/^www\./, '');
+    } catch {
+      return normalize(url).replace(/^www\./, '');
+    }
+  }
+
   // ===== INIT =====
   function init() {
     applyTheme(state.theme);
@@ -529,37 +552,43 @@
 
   function parseCSVLines(text) {
     const lines = [];
-    let current = [];
+    let currentRow = [];
+    let currentField = '';
     let inQuotes = false;
-    let field = '';
+
+    // Auto-detect separator: comma or semicolon
+    let sep = ',';
+    const firstLine = text.split('\n')[0];
+    if (!firstLine.includes(',') && firstLine.includes(';')) sep = ';';
 
     for (let i = 0; i < text.length; i++) {
       const ch = text[i];
+      const nextCh = text[i + 1];
+
       if (ch === '"') {
-        if (inQuotes && i + 1 < text.length && text[i + 1] === '"') {
-          field += '"';
+        if (inQuotes && nextCh === '"') {
+          currentField += '"';
           i++;
         } else {
           inQuotes = !inQuotes;
         }
-      } else if (ch === ',' && !inQuotes) {
-        current.push(field);
-        field = '';
-      } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
-        if (ch === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
-        current.push(field);
-        field = '';
-        if (current.length > 1 || (current.length === 1 && current[0].trim())) {
-          lines.push(current);
-        }
-        current = [];
+      } else if (ch === sep && !inQuotes) {
+        currentRow.push(currentField);
+        currentField = '';
+      } else if (ch === '\n' && !inQuotes) {
+        currentRow.push(currentField);
+        lines.push(currentRow);
+        currentRow = [];
+        currentField = '';
+      } else if (ch === '\r' && !inQuotes) {
+        // ignore
       } else {
-        field += ch;
+        currentField += ch;
       }
     }
-    current.push(field);
-    if (current.length > 1 || (current.length === 1 && current[0].trim())) {
-      lines.push(current);
+    currentRow.push(currentField);
+    if (currentRow.length > 1 || (currentRow.length === 1 && currentRow[0].trim())) {
+      lines.push(currentRow);
     }
     return lines;
   }
@@ -1048,20 +1077,8 @@
     const rule = $('#duplicateRule').value;
     const groups = new Map();
 
-    const normalize = (str) => (str || '').toLowerCase().trim();
-    const getDomain = (url) => {
-      try {
-        let u = url.trim();
-        if (!u.includes('://')) u = 'https://' + u;
-        return new URL(u).hostname.replace(/^www\./, '');
-      } catch {
-        return normalize(url).replace(/^www\./, '');
-      }
-    };
-
     const fuzzyDomain = (url) => {
       const domain = getDomain(url);
-      // Remove subdomains and common suffixes
       const parts = domain.split('.');
       if (parts.length > 2) return parts.slice(-2).join('.');
       return domain;
@@ -1073,10 +1090,10 @@
 
       switch (rule) {
         case 'exact':
-          key = `${normalize(entry.url)}|${normalize(entry.username)}|${normalize(entry.password)}`;
+          key = `${getNormalizedUrl(entry.url)}|${normalize(entry.username)}|${normalize(entry.password)}`;
           break;
         case 'websiteUsername':
-          key = `${normalize(entry.url)}|${normalize(entry.username)}`;
+          key = `${getNormalizedUrl(entry.url)}|${normalize(entry.username)}`;
           break;
         case 'website':
           key = getDomain(entry.url);
@@ -1263,8 +1280,9 @@
   }
 
   // ===== EXPORT =====
-  function exportData() {
-    if (state.entries.length === 0) {
+  function exportData(customEntries = null) {
+    const entriesToExport = customEntries || state.entries;
+    if (entriesToExport.length === 0) {
       showToast('No entries to export', 'warning');
       return;
     }
@@ -1360,10 +1378,10 @@
     }
 
     downloadFile(content, filename, mimeType);
-    showToast(`Exported ${state.entries.length} entries as ${filename}`, 'success');
+    showToast(`Exported ${entriesToExport.length} entries as ${filename}`, 'success');
 
-    // Auto-clean after export if toggle is ON
-    if ($('#autoCleanAfterExport') && $('#autoCleanAfterExport').checked) {
+    // Auto-clean after export if toggle is ON (only if exporting all entries)
+    if (!customEntries && $('#autoCleanAfterExport') && $('#autoCleanAfterExport').checked) {
       setTimeout(() => {
         saveUndoState();
         state.entries = [];
@@ -1393,9 +1411,10 @@
 
   function exportBitwardenCSV() {
     const headers = 'folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp';
-    const rows = state.entries.map(e =>
-      [e.group || '', '0', '1', e.name, e.notes || '', '', '0', e.url, e.username, e.password, e.totp || ''].map(csvEscape).join(',')
-    );
+    const rows = state.entries.map(e => {
+      const name = e.name || getDomain(e.url) || 'Untitled';
+      return [e.group || '', '0', '1', name, e.notes || '', '', '0', e.url || '', e.username || '', e.password || '', e.totp || ''].map(csvEscape).join(',');
+    });
     return [headers, ...rows].join('\n');
   }
 
@@ -1405,12 +1424,12 @@
       items: state.entries.map((e, i) => ({
         id: 'item-' + i,
         type: 1,
-        name: e.name,
+        name: e.name || getDomain(e.url) || 'Untitled',
         notes: e.notes || null,
         login: {
           uris: e.url ? [{ uri: e.url, match: null }] : [],
-          username: e.username,
-          password: e.password,
+          username: e.username || '',
+          password: e.password || '',
           totp: e.totp || null
         },
         collectionIds: []
@@ -1419,9 +1438,9 @@
   }
 
   function exportChromeCSV() {
-    const headers = 'name,url,username,password';
+    const headers = 'name,url,username,password,notes';
     const rows = state.entries.map(e =>
-      [e.name || e.url, e.url, e.username, e.password].map(csvEscape).join(',')
+      [e.name || getDomain(e.url) || 'Untitled', e.url || '', e.username || '', e.password || '', e.notes || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1429,7 +1448,7 @@
   function exportFirefoxCSV() {
     const headers = 'hostname,httpRealm,formSubmitURL,usernameField,passwordField,username,password';
     const rows = state.entries.map(e =>
-      [e.url, '', '', '', '', e.username, e.password].map(csvEscape).join(',')
+      [e.url || '', '', '', '', '', e.username || '', e.password || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1437,7 +1456,7 @@
   function exportLastPassCSV() {
     const headers = 'url,username,password,totp,extra,name,grouping,fav';
     const rows = state.entries.map(e =>
-      [e.url, e.username, e.password, e.totp || '', e.notes || '', e.name, e.group || '', '0'].map(csvEscape).join(',')
+      [e.url || '', e.username || '', e.password || '', e.totp || '', e.notes || '', e.name || getDomain(e.url) || 'Untitled', e.group || '', '0'].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1445,7 +1464,7 @@
   function export1PasswordCSV() {
     const headers = 'Title,Username,Password,URL,Notes,Type';
     const rows = state.entries.map(e =>
-      [e.name, e.username, e.password, e.url, e.notes || '', 'Login'].map(csvEscape).join(',')
+      [e.name || getDomain(e.url) || 'Untitled', e.username || '', e.password || '', e.url || '', e.notes || '', 'Login'].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1453,7 +1472,7 @@
   function exportDashlaneCSV() {
     const headers = 'username,username2,username3,password,name,website,category,note';
     const rows = state.entries.map(e =>
-      [e.username, '', '', e.password, e.name, e.url, e.group || '', e.notes || ''].map(csvEscape).join(',')
+      [e.username || '', '', '', e.password || '', e.name || getDomain(e.url) || 'Untitled', e.url || '', e.group || '', e.notes || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1461,7 +1480,7 @@
   function exportKeeperCSV() {
     const headers = 'Folder,Title,Login,Password,web_address,Notes,custom fields';
     const rows = state.entries.map(e =>
-      [e.group || '', e.name, e.username, e.password, e.url, e.notes || '', ''].map(csvEscape).join(',')
+      [e.group || '', e.name || getDomain(e.url) || 'Untitled', e.username || '', e.password || '', e.url || '', e.notes || '', ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1469,7 +1488,7 @@
   function exportNordPassCSV() {
     const headers = 'name,url,username,password,note';
     const rows = state.entries.map(e =>
-      [e.name, e.url, e.username, e.password, e.notes || ''].map(csvEscape).join(',')
+      [e.name || getDomain(e.url) || 'Untitled', e.url || '', e.username || '', e.password || '', e.notes || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1477,7 +1496,7 @@
   function exportRoboFormCSV() {
     const headers = 'Name,Url,MatchUrl,Login,Pwd,Note';
     const rows = state.entries.map(e =>
-      [e.name, e.url, e.url, e.username, e.password, e.notes || ''].map(csvEscape).join(',')
+      [e.name || getDomain(e.url) || 'Untitled', e.url || '', e.url || '', e.username || '', e.password || '', e.notes || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1485,7 +1504,7 @@
   function exportKeePassCSV() {
     const headers = 'Group,Title,Username,Password,URL,Notes';
     const rows = state.entries.map(e =>
-      [e.group || '', e.name, e.username, e.password, e.url, e.notes || ''].map(csvEscape).join(',')
+      [e.group || '', e.name || getDomain(e.url) || 'Untitled', e.username || '', e.password || '', e.url || '', e.notes || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1493,7 +1512,7 @@
   function exportEnpassCSV() {
     const headers = 'Title,Username,Password,URL,Note';
     const rows = state.entries.map(e =>
-      [e.name, e.username, e.password, e.url, e.notes || ''].map(csvEscape).join(',')
+      [e.name || getDomain(e.url) || 'Untitled', e.username || '', e.password || '', e.url || '', e.notes || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
@@ -1506,11 +1525,11 @@
           items: state.entries.map((e, i) => ({
             id: 'item-' + i,
             data: {
-              metadata: { name: e.name, note: e.notes || '' },
+              metadata: { name: e.name || getDomain(e.url) || 'Untitled', note: e.notes || '' },
               content: {
-                itemTitle: e.name,
-                username: e.username,
-                password: e.password,
+                itemTitle: e.name || getDomain(e.url) || 'Untitled',
+                username: e.username || '',
+                password: e.password || '',
                 urls: e.url ? [e.url] : [],
                 note: e.notes || '',
                 totpUri: e.totp || ''
@@ -1525,28 +1544,29 @@
   function exportZohoCSV() {
     const headers = 'Folder Name,Account Name,User Name,Password,Website URL,Notes';
     const rows = state.entries.map(e =>
-      [e.group || '', e.name, e.username, e.password, e.url, e.notes || ''].map(csvEscape).join(',')
+      [e.group || '', e.name || getDomain(e.url) || 'Untitled', e.username || '', e.password || '', e.url || '', e.notes || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
 
   function exportGenericCSV() {
-    const headers = 'name,url,username,password,notes,group';
+    const headers = 'name,url,username,email,password,notes,group,totp,source';
     const rows = state.entries.map(e =>
-      [e.name, e.url, e.username, e.password, e.notes || '', e.group || ''].map(csvEscape).join(',')
+      [e.name || getDomain(e.url) || 'Untitled', e.url || '', e.username || '', e.username || '', e.password || '', e.notes || '', e.group || '', e.totp || '', e.source || ''].map(csvEscape).join(',')
     );
     return [headers, ...rows].join('\n');
   }
 
   function exportGenericJSON() {
     return JSON.stringify(state.entries.map(e => ({
-      name: e.name,
-      url: e.url,
-      username: e.username,
-      password: e.password,
+      name: e.name || getDomain(e.url) || 'Untitled',
+      url: e.url || '',
+      username: e.username || '',
+      password: e.password || '',
       notes: e.notes || '',
       group: e.group || '',
-      totp: e.totp || ''
+      totp: e.totp || '',
+      source: e.source || ''
     })), null, 2);
   }
 
@@ -1736,6 +1756,27 @@
     $('#statDuplicates').textContent = dupCount;
     $('#statGroups').textContent = state.duplicateGroups.length;
     $('#statFormats').textContent = state.formatsDetected.size;
+
+    let weakCount = 0;
+    let reusedCount = 0;
+    const pwMap = new Map();
+
+    state.entries.forEach(e => {
+      const pw = e.password || '';
+      if (scorePassword(pw).level === 'weak') weakCount++;
+      if (pw) {
+        pwMap.set(pw, (pwMap.get(pw) || 0) + 1);
+      }
+    });
+
+    pwMap.forEach((count) => {
+      if (count > 1) reusedCount += count;
+    });
+
+    const statWeak = $('#statWeak');
+    const statReused = $('#statReused');
+    if (statWeak) statWeak.textContent = weakCount;
+    if (statReused) statReused.textContent = reusedCount;
   }
 
   // ===== SAMPLE DATA =====
@@ -1968,7 +2009,13 @@
     if (/[a-z]/.test(pw)) score += 10;
     if (/[A-Z]/.test(pw)) score += 10;
     if (/[0-9]/.test(pw)) score += 10;
-    if (/[^a-zA-Z0-9]/.test(pw)) score += 15;
+    if (!/[^a-zA-Z0-9]/.test(pw)) score -= 10;
+
+    // Pattern Checks
+    if (/^[0-9]+$/.test(pw)) score -= 20; // Only numbers
+    if (/^[a-zA-Z]+$/.test(pw)) score -= 10; // Only letters
+    if (/(123|abc|qwerty|password)/i.test(pw)) score -= 20; // Sequences
+    if (/(19|20)\d{2}/.test(pw)) score -= 10; // Years (19xx, 20xx)
 
     // Mixed case bonus
     if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score += 5;
@@ -1979,15 +2026,6 @@
       const symbolCount = (pw.match(/[^a-zA-Z0-9]/g) || []).length;
       if (symbolCount >= 2) score += 5;
     }
-
-    // Penalties
-    if (COMMON_PASSWORDS.has(pw.toLowerCase())) score = Math.max(score - 40, 5);
-    if (/^([a-zA-Z])\1+$/.test(pw)) score = Math.max(score - 20, 5); // All same char
-    if (/^(012|123|234|345|456|567|678|789|890|abc|bcd|cde)/i.test(pw)) score -= 10; // Sequential
-    if (/^[a-z]+$/.test(pw) || /^[A-Z]+$/.test(pw)) score -= 5; // All same case
-    if (/^[0-9]+$/.test(pw)) score -= 10; // All digits
-    if (len < 6) score = Math.min(score, 15);
-    if (len < 4) score = Math.min(score, 5);
 
     score = Math.max(0, Math.min(100, score));
 
@@ -2667,8 +2705,11 @@
         if (entry.name && (!existing.entry.name || existing.entry.name.length < entry.name.length)) {
           existing.entry.name = entry.name;
         }
-        if (entry.notes && !existing.entry.notes.includes(entry.notes)) {
-          existing.entry.notes = (existing.entry.notes ? existing.entry.notes + ' | ' : '') + entry.notes;
+        if (entry.notes) {
+          const cleanNote = entry.notes.trim();
+          if (cleanNote && !existing.entry.notes.includes(cleanNote)) {
+            existing.entry.notes = (existing.entry.notes ? existing.entry.notes + ' | ' : '') + cleanNote;
+          }
         }
         if (entry.totp && !existing.entry.totp) {
           existing.entry.totp = entry.totp;
@@ -2729,10 +2770,7 @@
     }
 
     const selectedEntries = Array.from(selectedEntryIndices).map(i => state.entries[i]).filter(Boolean);
-    const original = state.entries;
-    state.entries = selectedEntries;
-    exportData();
-    state.entries = original;
+    exportData(selectedEntries);
   }
 
   // ===== NEW: DETAILED STATS =====
@@ -2911,7 +2949,8 @@
           <span style="color:var(--text-secondary);font-size:0.75rem;">${i + 1}</span>
           <div>
             <span class="entry-source">${escapeHtml(e.source)}</span>
-            <div class="entry-url">${escapeHtml(truncate(e.url, 40))}</div>
+            <div class="entry-url">${escapeHtml(e.name || getDomain(e.url) || 'Untitled')}</div>
+            <div class="entry-url-sub" style="font-size:0.7rem;color:var(--text-secondary);">${escapeHtml(truncate(e.url, 40))}</div>
           </div>
           <div class="entry-user">${escapeHtml(e.username)}</div>
           <div class="entry-password"><span class="masked" onclick="togglePassword(this)" data-pw="${escapeHtml(_safeBtoa(e.password || ''))}" style="cursor:pointer;">${'*'.repeat(Math.min((e.password || '').length, 12))}</span></div>
@@ -2999,10 +3038,9 @@
     let dupesRemoved = 0;
 
     for (const entry of state.entries) {
-      // Exact match key: normalised url + username + password
-      const normUrl   = (entry.url || '').toLowerCase().replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, '');
-      const normUser  = (entry.username || '').toLowerCase().trim();
-      const normPass  = (entry.password || '').trim();
+      const normUrl = getNormalizedUrl(entry.url);
+      const normUser = normalize(entry.username);
+      const normPass = normalize(entry.password);
       const key       = `${normUrl}||${normUser}||${normPass}`;
 
       if (seen.has(key)) {
@@ -3025,8 +3063,8 @@
     let similarMerged = 0;
 
     for (const entry of keepers) {
-      const normUrl  = (entry.url || '').toLowerCase().replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, '');
-      const normUser = (entry.username || '').toLowerCase().trim();
+      const normUrl  = getNormalizedUrl(entry.url);
+      const normUser = normalize(entry.username);
       const key      = `${normUrl}||${normUser}`;
 
       if (merged.has(key)) {
